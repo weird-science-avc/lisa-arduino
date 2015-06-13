@@ -8,7 +8,7 @@ Open source - do what you want with this code!
 const int min_steering = 1150; // all left
 const int max_steering = 2120; // all right
 const int straight_steering = (max_steering + min_steering) / 2;
-int value = 690; // set values you need to zero
+int value = 800; // set values you need to zero
 int buttonPin = 12;
 int ledPin = 13;
 int hallPin = 7;
@@ -18,12 +18,12 @@ Servo firstESC, secondESC; //Create as much as Servoobject you want. You can con
 void setup() {
   
   firstESC.attach(9);    // attached to pin 9 I just do this with 1 Servo
-  secondESC.attach(10);    // attached to pin 9 I just do this with 1 Servo
+  secondESC.attach(10);
   Serial.begin(9600);    // start serial at 9600 baud
   pinMode(buttonPin, INPUT); 
   pinMode(hallPin, INPUT);
   pinMode(ledPin, OUTPUT); 
-  firstESC.writeMicroseconds(0);
+  firstESC.writeMicroseconds(value);
   secondESC.writeMicroseconds(straight_steering);
 }
 
@@ -31,7 +31,8 @@ void loop() {
   // First connect your ESC WITHOUT Arming. Then Open Serial and follo Instructions
 //  Serial.println(value);
 //  if(Serial.available())
-//    code = Serial.parseInt();    // Parse an Integer from Serial
+//    value = Serial.parseInt();    // Parse an Integer from Serial
+//    firstESC.writeMicroseconds(value);
 //    if(code == 12345)
 //      test_run();
   
