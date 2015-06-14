@@ -5,10 +5,10 @@ Open source - do what you want with this code!
 */
 #include <Servo.h>
 
-const int min_steering = 1150; // all left
-const int max_steering = 2120; // all right
-const int straight_steering = (max_steering + min_steering) / 2;
-int value = 800; // set values you need to zero
+const int min_steering = 1150; // all left (going backwards = right)
+const int max_steering = 2120; // all right  (going backwards = left)
+const int straight_steering = 1605; //1550   (max_steering + min_steering) / 2; 1635 
+int value = 1186; // set values you need to zero
 int buttonPin = 12;
 int ledPin = 13;
 int hallPin = 7;
@@ -23,8 +23,13 @@ void setup() {
   pinMode(buttonPin, INPUT); 
   pinMode(hallPin, INPUT);
   pinMode(ledPin, OUTPUT); 
-  firstESC.writeMicroseconds(value);
+  firstESC.writeMicroseconds(0);
+//  delay(1000);
+//  secondESC.writeMicroseconds(min_steering);
+//  delay(1000);
   secondESC.writeMicroseconds(straight_steering);
+//  delay(1000);
+//  secondESC.writeMicroseconds(max_steering);
 }
 
 void loop() {
@@ -35,50 +40,54 @@ void loop() {
 //    firstESC.writeMicroseconds(value);
 //    if(code == 12345)
 //      test_run();
-  
-  
-  
+
   hallValue = digitalRead(hallPin);
   Serial.println(hallValue);
 //  delay(30);
   
   
   
-//  if(digitalRead(buttonPin) == HIGH) {
-//    Serial.println("Button was pressed!");
-//    //light LED!!
-//    digitalWrite(ledPin, HIGH);
-//    delay(3000);
-//    test_run();
-//    digitalWrite(ledPin, LOW);
-//  }
+  if(digitalRead(buttonPin) == HIGH) {
+    Serial.println("Button was pressed!");
+    //light LED!!
+    digitalWrite(ledPin, HIGH);
+    delay(3000);
+    test_run();
+    value = value + 40;
+    digitalWrite(ledPin, LOW);
+  }
 }
 
 void test_run(){
-  int halfway_right = ((max_steering - straight_steering) / 2) + straight_steering;
-  Serial.println("setting steering");
-  Serial.println(halfway_right);
-  secondESC.writeMicroseconds(halfway_right);
+//  int halfway_right = ((max_steering - straight_steering) / 2) + straight_steering;
+//  Serial.println("setting steering");
+//  Serial.println(halfway_right);
+//  secondESC.writeMicroseconds(halfway_right);
   //start up
-  for (int i = 0; i < 4; i++) {
-    Serial.println(value);
-    firstESC.writeMicroseconds(value);
-    delay(1000);
-    value = value + 10;
-  }
   
-  int halfway_left = ((min_steering - straight_steering) / 2) + straight_steering;
-  Serial.println("setting steering");
-  Serial.println(halfway_left);
-  secondESC.writeMicroseconds(halfway_left); // halfway left
-  //slow down
-  for (int i = 0; i < 3; i++) {
-    Serial.println(value);
+    secondESC.writeMicroseconds(straight_steering);
     firstESC.writeMicroseconds(value);
-    delay(1000);
-    value = value - 10;
-  }
-  Serial.println("Stop");
-  firstESC.writeMicroseconds(400);
-  secondESC.writeMicroseconds((max_steering + min_steering) / 2);
+    delay(5000);
+    firstESC.writeMicroseconds(0);
+//  for (int i = 0; i < 4; i++) {
+//    Serial.println(value);
+//    firstESC.writeMicroseconds(value);
+//    delay(1000);
+//    value = value + 10;
+//  }
+//  
+//  int halfway_left = ((min_steering - straight_steering) / 2) + straight_steering;
+//  Serial.println("setting steering");
+//  Serial.println(halfway_left);
+//  secondESC.writeMicroseconds(halfway_left); // halfway left
+//  //slow down
+//  for (int i = 0; i < 3; i++) {
+//    Serial.println(value);
+//    firstESC.writeMicroseconds(value);
+//    delay(1000);
+//    value = value - 10;
+//  }
+//  Serial.println("Stop");
+//  firstESC.writeMicroseconds(400);
+//  secondESC.writeMicroseconds((max_steering + min_steering) / 2);
 }
