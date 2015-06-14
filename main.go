@@ -18,12 +18,12 @@ const (
 )
 
 type Vector struct {
-	magnitude float64
-	direction float64
+	d float64
+	r float64
 }
 
 func (v Vector) String() string {
-	return fmt.Sprintf("(mag:%0.3f,dir:%0.3f)", v.magnitude, v.direction*180.0/math.Pi)
+	return fmt.Sprintf("(%0.3f,%0.3f)", v.d, v.r*180.0/math.Pi)
 }
 
 type Location struct {
@@ -36,12 +36,13 @@ func (l Location) String() string {
 }
 
 type Position struct {
-	loc         Location
-	orientation float64
+	x float64
+	y float64
+	r float64 // direction
 }
 
 func (p Position) String() string {
-	return fmt.Sprintf("%s:%0.3f", p.loc, p.orientation*180.0/math.Pi)
+	return fmt.Sprintf("(%0.3f,%0.3f):%0.3f", p.x, p.y, p.r*180.0/math.Pi)
 }
 
 //func main() {
@@ -57,16 +58,15 @@ func (p Position) String() string {
 //	NavigateTo(0, 0)
 //}
 
+var startingPosition = Position{0.0, 0.0, 0.0}
+
 func main() {
 	// TODO: Take in as parameter, or an array we iterate through
-	targetLocation := Location{0.0, 10.0}
+	targetLocation := Location{10.0, 0.0}
 	//targetLocation := Location{5.0, 5.0}
 
 	// We always start at 0, 0 and along Y axis (pi/2)
-	currentPosition := Position{
-		loc:         Location{0.0, 0.0},
-		orientation: math.Pi / 2.0,
-	}
+	currentPosition := startingPosition
 
 	// Create speed and steering services to talk to
 	speedService, speedChan := NewSpeedService()
@@ -77,9 +77,9 @@ func main() {
 
 	// Do until we reach our target
 	log.Println("Traversing from %s to %s", currentPosition, targetLocation)
-	for !arrivedLocation(currentPosition.loc, targetLocation) {
+	for !arrivedLocation(Location{currentPosition.x, currentPosition.y}, targetLocation) {
 		// Get the direct vector to our target
-		targetVector := getDirectVector(currentPosition.loc, targetLocation)
+		targetVector := getDirectVector(Location{currentPosition.x, currentPosition.y}, targetLocation)
 
 		// TODO: Once we have sensors for items, we want to ask something if our
 		// direct vector hits something, and if so to pick the tangental vector
@@ -96,10 +96,10 @@ func main() {
 		// TODO: left is negative, is that right?
 		// NOTE: Allow excess of what the car can do, the steering control will
 		// translate and limit as appropriate and we'll just keep trying to reach it
-		targetSteering := int((targetVector.direction * 180.0 / math.Pi) - (currentPosition.orientation * 180.0 / math.Pi))
+		targetSteering := int((targetVector.r * 180.0 / math.Pi) - (currentPosition.r * 180.0 / math.Pi))
 
 		// Calculate target speed with boundaries
-		desiredSpeed := targetVector.magnitude / APPROACH_DELTA * float64(MAX_SPEED)
+		desiredSpeed := targetVector.d / APPROACH_DELTA * float64(MAX_SPEED)
 		targetSpeed := int(math.Min(math.Max(desiredSpeed, 1.0), MAX_SPEED))
 
 		// And finally send speed and steering updates based on target vector
@@ -120,15 +120,15 @@ func main() {
 func getDirectVector(current, target Location) (v Vector) {
 	deltaY := target.y - current.y
 	deltaX := target.x - current.x
-	v.magnitude = math.Sqrt(math.Pow(deltaX, 2) + math.Pow(deltaY, 2))
-	v.direction = math.Atan2(deltaY, deltaX)
+	v.d = math.Sqrt(math.Pow(deltaX, 2) + math.Pow(deltaY, 2))
+	v.r = math.Atan2(deltaY, deltaX)
 	return
 }
 
 // Decides if we've arrived at a location
 func arrivedLocation(current, target Location) bool {
 	v := getDirectVector(current, target)
-	return v.magnitude < ARRIVE_DELTA
+	return v.d < ARRIVE_DELTA
 }
 
 type speedService struct {
@@ -163,10 +163,7 @@ func (s *steeringService) Send(value int) {
 }
 
 func makePositionChan(speedChan, steeringChan <-chan int) <-chan Position {
-	// we start at (0, 0) pointing y-axis (math.Pi/2.0) with speed 0, steering 0
-	x := 0.0
-	y := 0.0
-	orientation := math.Pi / 2.0
+	position := startingPosition
 	speed := 0
 	steering := 0
 
@@ -174,6 +171,7 @@ func makePositionChan(speedChan, steeringChan <-chan int) <-chan Position {
 	c := make(chan Position, 1)
 	go func() {
 		timestamp := time.Now()
+		newPosition := position
 		newSpeed := speed
 		newSteering := steering
 		tick := time.Tick(100 * time.Millisecond)
@@ -196,31 +194,32 @@ func makePositionChan(speedChan, steeringChan <-chan int) <-chan Position {
 			// TODO: Pick units so we know how to use with timeElapsed
 			timeElapsed := newTimestamp.Sub(timestamp)
 			// First get radius, velocity and distance traveled
-			r := radiusFromSteering(steering)
-			v := velocityFromSpeed(speed)
-			d := v * timeElapsed.Seconds()
+			radius := radiusFromSteering(steering)
+			velocity := velocityFromSpeed(speed)
+			distance := velocity * timeElapsed.Seconds()
 			// If radius is 0 then use straight direction math, otherwise banked math
-			if r == 0.0 {
+			if radius == 0.0 {
 				// Straight motion
-				x = x + d*math.Cos(orientation)
-				y = y + d*math.Sin(orientation)
+				newPosition.x = position.x + distance*math.Cos(position.r)
+				newPosition.y = position.y + distance*math.Sin(position.r)
 			} else {
 				// Banked motion
 				// FIXME: Need to adjust for orientation too
-				x = r * (math.Cos((d/r)+math.Atan(y/(x+r))) - 1)
-				y = r * math.Sin((d/r)+math.Atan(y/(x+r)))
+				newPosition.x = radius * (math.Cos((distance/radius)+math.Atan(position.y/(position.x+radius))) - 1)
+				newPosition.y = radius * math.Sin((distance/radius)+math.Atan(position.y/(position.x+radius)))
 
 				// orientation changes by straight angle from
-				orientation -= d / r
+				newPosition.r = position.r - distance/radius
 			}
 
 			// Send the data to the channel if available, otherwise just skip until next chance
 			select {
-			case c <- Position{loc: Location{x, y}, orientation: orientation}:
+			case c <- newPosition:
 			default:
 			}
 
 			// Set data for next loop
+			position = newPosition
 			speed = newSpeed
 			steering = newSteering
 			timestamp = newTimestamp
@@ -239,4 +238,37 @@ func radiusFromSteering(steering int) float64 {
 
 func velocityFromSpeed(speed int) float64 {
 	return float64(speed) / 10.0
+}
+
+// TODO: Turn radius of 0.0 will be an issue, don't allow
+func calculateNewPosition(position Position, distance, turnRadius float64) (newPosition Position) {
+	// Figure out xDelta, yDelta, and rDelta based on straight or banked travel
+	var xDelta, yDelta, rDelta float64
+
+	if math.IsNaN(turnRadius) {
+		// Straight motion
+		xDelta = distance * math.Cos(position.r)
+		yDelta = distance * math.Sin(position.r)
+
+	} else {
+		// Banked motion
+		// Get the rDelta
+		rDelta = distance / turnRadius
+		// Calculate x and y deltas as if we were at (0,0) pointed along x-axis
+		// NOTE: x is 'up' for us, so that's governed by Sin
+		xDeltaOrigin := turnRadius * math.Sin(rDelta)
+		yDeltaOrigin := turnRadius * (-math.Cos(rDelta) + 1)
+
+		// Now we need to rotate those deltas around (0,0) by our current orientation so they're correct
+		sinR := math.Sin(position.r)
+		cosR := math.Cos(position.r)
+		xDelta = xDeltaOrigin*cosR - yDeltaOrigin*sinR
+		yDelta = xDeltaOrigin*sinR + yDeltaOrigin*cosR
+	}
+
+	// Now make adjustments to position and return
+	newPosition.x = position.x + xDelta
+	newPosition.y = position.y + yDelta
+	newPosition.r = position.r + rDelta
+	return
 }
