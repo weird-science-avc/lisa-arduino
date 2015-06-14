@@ -7,8 +7,9 @@ Open source - do what you want with this code!
 
 const int min_steering = 1150; // all left (going backwards = right)
 const int max_steering = 2120; // all right  (going backwards = left)
-const int straight_steering = 1605; //1550   (max_steering + min_steering) / 2; 1635 
-int value = 1186; // set values you need to zero
+const int straight_steering = 1608; //1550   (max_steering + min_steering) / 2; 1635 
+int motor_speed = 880; // Should be 880 
+int distance_to_travel = 30; // in meters
 int buttonPin = 12;
 int ledPin = 13;
 int hallPin = 7;
@@ -24,28 +25,13 @@ void setup() {
   pinMode(hallPin, INPUT);
   pinMode(ledPin, OUTPUT); 
   firstESC.writeMicroseconds(0);
-//  delay(1000);
-//  secondESC.writeMicroseconds(min_steering);
-//  delay(1000);
   secondESC.writeMicroseconds(straight_steering);
-//  delay(1000);
-//  secondESC.writeMicroseconds(max_steering);
 }
 
 void loop() {
-  // First connect your ESC WITHOUT Arming. Then Open Serial and follo Instructions
-//  Serial.println(value);
-//  if(Serial.available())
-//    value = Serial.parseInt();    // Parse an Integer from Serial
-//    firstESC.writeMicroseconds(value);
-//    if(code == 12345)
-//      test_run();
 
   hallValue = digitalRead(hallPin);
   Serial.println(hallValue);
-//  delay(30);
-  
-  
   
   if(digitalRead(buttonPin) == HIGH) {
     Serial.println("Button was pressed!");
@@ -53,41 +39,19 @@ void loop() {
     digitalWrite(ledPin, HIGH);
     delay(3000);
     test_run();
-    value = value + 40;
+    motor_speed = motor_speed + 40;
     digitalWrite(ledPin, LOW);
   }
 }
 
 void test_run(){
-//  int halfway_right = ((max_steering - straight_steering) / 2) + straight_steering;
-//  Serial.println("setting steering");
-//  Serial.println(halfway_right);
-//  secondESC.writeMicroseconds(halfway_right);
-  //start up
-  
     secondESC.writeMicroseconds(straight_steering);
-    firstESC.writeMicroseconds(value);
-    delay(5000);
+    firstESC.writeMicroseconds(motor_speed);
+    delay((int) get_time_needed((float) motor_speed, (float) distance_to_travel)); // go 30 meters at speed determined above
     firstESC.writeMicroseconds(0);
-//  for (int i = 0; i < 4; i++) {
-//    Serial.println(value);
-//    firstESC.writeMicroseconds(value);
-//    delay(1000);
-//    value = value + 10;
-//  }
-//  
-//  int halfway_left = ((min_steering - straight_steering) / 2) + straight_steering;
-//  Serial.println("setting steering");
-//  Serial.println(halfway_left);
-//  secondESC.writeMicroseconds(halfway_left); // halfway left
-//  //slow down
-//  for (int i = 0; i < 3; i++) {
-//    Serial.println(value);
-//    firstESC.writeMicroseconds(value);
-//    delay(1000);
-//    value = value - 10;
-//  }
-//  Serial.println("Stop");
-//  firstESC.writeMicroseconds(400);
-//  secondESC.writeMicroseconds((max_steering + min_steering) / 2);
+}
+
+float get_time_needed(float motor_power, float distance_meters) {
+  float meters_per_second = (motor_power - 659.19)/95.964;
+  return distance_meters/meters_per_second;
 }
