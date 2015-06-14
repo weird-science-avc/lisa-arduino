@@ -9,13 +9,21 @@
 // INTERNAL REFERNCE
 const float MIN_VELOCITY = 0.25; // m/s
 const float MAX_VELOCITY = 2.0; // m/s
-const float MAX_STEERING = 30; // degrees 2120(left)
 
-const float ARRIVE_DELTA = 0.05;
+// Angle (radians) under which we won't make steering corrections
+const float ORIENTATION_DELTA = 5.0 * PI / 180.0;
+// Distance (m) at which to say we're close enough to the target to say we're there
+const float ARRIVE_DELTA = 0.1;
+// Distance (m) at which we start slowing down to stop at the target
 const float APPROACH_DELTA = 1.0;
 
-// TODO: Do we need this more accurate
-const float pi = 3.14;
+// Use enum for steering; see steering_calibration.h for details
+enum STEERING {
+  STEERING_LEFT,
+  STEERING_CENTER,
+  STEERING_RIGHT
+};
+
 
 struct Location {
   float x;
@@ -49,20 +57,17 @@ class Navigator
     bool haveArrived(float distance);
 
     // turnRadius of 0.0 or NAN means straight
-    float turnRadiusFromSteering(float steering);
+    float turnRadiusFromSteering(STEERING steering);
     Position calculateNewPosition(Position position, float distance, float turnRadius);
     float calculateNewVelocity(float velocity, float distance);
-    float calculateNewSteering(float steering, float angle);
+    STEERING calculateNewSteering(STEERING steering, float angle);
 
     // s = 0 => servoValue == 0
     // s = MIN_VELOCITY to MAX_VELOCITY according to calibration function
     void setVelocity(float velocity);
 
 
-    // s = 0.0 => servoValue == CENTER_STEERING
-    // s > 0 (left) => according to left calibration function
-    // s < 0 (right) => according to right calibration function
-    void setSteering(float steering);
+    void setSteering(STEERING steering);
 };
 
 #endif

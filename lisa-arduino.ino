@@ -30,7 +30,6 @@ void setup() {
 
 // This is called on a loop
 void loop() {
-
   if (digitalRead(BUTTON_PIN) == HIGH) {
     // Make sure our light is off, turn on to warn, turn off to work
     digitalWrite(LED_PIN, LOW);
@@ -39,7 +38,8 @@ void loop() {
     delay(3000);
     digitalWrite(LED_PIN, LOW);
 
-    navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{10.0, 0.0});
+    //navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{10.0, 0.0});
+    navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{5.0, 5.0});
 
     // Let them know we finished our task
     digitalWrite(LED_PIN, HIGH);

@@ -7,7 +7,7 @@ void serialPrintPosition(char* prefix, Position p) {
   Serial.print(",");
   Serial.print(p.y);
   Serial.print("):");
-  Serial.println(p.r);
+  Serial.println(p.r * 180.0 / PI);
 }
 
 void serialPrintLocation(char* prefix, Location l) {
@@ -27,7 +27,7 @@ Navigator::Navigator(Servo speedServo, Servo steeringServo) {
 void Navigator::NavigateTo(Position start, Location target) {
   Position position = start;
   float velocity = 0;
-  int steering = 0;
+  STEERING steering = STEERING_CENTER;
   Vector targetVector;
 
   serialPrintPosition("START: ", position);
@@ -40,7 +40,7 @@ void Navigator::NavigateTo(Position start, Location target) {
     Serial.print("targetVector: ");
     Serial.print(targetVector.d);
     Serial.print(",");
-    Serial.println(targetVector.r);
+    Serial.println(targetVector.r * 180.0 / PI);
 
     // If we're close enough, then set thelet people know and exit
     if (haveArrived(targetVector.d)) {
@@ -57,12 +57,11 @@ void Navigator::NavigateTo(Position start, Location target) {
     setSteering(steering);
 
     // Print out decisions
-    serialPrintPosition("POSITION: ", position);
     Serial.print("VELOCITY: ");
     Serial.print(velocity);
     Serial.println(" m/s");
     Serial.print("STEERING: ");
-    Serial.println(steering);
+    Serial.println(steering == STEERING_LEFT ? "left" : steering == STEERING_CENTER ? "center" : "right");
 
     // Now wait 100ms, then calculate a new position and repeate
     delay(100);
@@ -78,12 +77,13 @@ void Navigator::NavigateTo(Position start, Location target) {
 
     // Use that information to calculate our new position before we kick off a new loop
     position = calculateNewPosition(position, distance, turnRadius);
+    serialPrintPosition("POSITION: ", position);
   }
 }
 
 Vector Navigator::vectorToTarget(Position p, Location t) {
-  float deltaY = p.y - t.y;
-  float deltaX = p.x - t.x;
+  float deltaY = t.y - p.y;
+  float deltaX = t.x - p.x;
   Vector v;
   v.d = sqrt(pow(deltaX, 2) + pow(deltaY, 2));
   v.r = atan2(deltaY, deltaX);
@@ -101,12 +101,12 @@ Position Navigator::calculateNewPosition(Position position, float distance, floa
   float rDelta = 0.0;
 
   // Figure out position deltas based on straight or banked travel
-  if (turnRadius == NAN || turnRadius == 0.0) {
-    // Straight motion
+  if (isnan(turnRadius) || turnRadius == 0.0) {
+    //Serial.println("Straight motion");
     xDelta = distance * cos(position.r);
     yDelta = distance * sin(position.r);
   } else {
-    // Banked motion
+    //Serial.println("Banked motion");
     // Get the rDelta
     rDelta = distance / turnRadius;
     // Calculate x and y deltas as if we were at (0,0) pointed along x-axis
@@ -147,45 +147,37 @@ void Navigator::setVelocity(float velocity) {
   }
 }
 
-float Navigator::calculateNewSteering(float steering, float angle) {
-  float targetSteering = angle * 180.0 / pi;
-  float newSteering = min(max(targetSteering, -MAX_STEERING), MAX_STEERING);
-  // TODO: Consider enforcing a maximum change
-  return newSteering;
+STEERING Navigator::calculateNewSteering(STEERING steering, float angle) {
+  if (angle < ORIENTATION_DELTA) {
+    return STEERING_CENTER;
+  } else if (angle < 0) {
+    return STEERING_RIGHT;
+  } else {
+    return STEERING_LEFT;
+  }
 }
 
-float Navigator::turnRadiusFromSteering(float steering) {
-  float turnRadius = NAN;
-  if (steering < 0) { // right
-    steering = min(abs(steering), MAX_STEERING);
-    // Calculate turnRadius from right linear equation
-    turnRadius = -(RIGHT_M_TURN_RADIUS_FROM_STEERING * steering + RIGHT_B_TURN_RADIUS_FROM_STEERING);
-  } else if (steering > 0) {
-    steering = min(steering, MAX_STEERING);
-    // Calculate servoValue from left curve
-    turnRadius = LEFT_M_TURN_RADIUS_FROM_STEERING * steering + LEFT_B_TURN_RADIUS_FROM_STEERING;
+float Navigator::turnRadiusFromSteering(STEERING steering) {
+  // TODO: Change to switch if supported
+  if (steering == STEERING_CENTER) {
+    return NAN;
+  } else if (steering == STEERING_LEFT) {
+    return STEERING_LEFT_TURN_RADIUS;
+  } else { // STEERING_RIGHT
+    return STEERING_LEFT_TURN_RADIUS;
   }
-  return turnRadius;
 }
 
-// s = 0.0 => servoValue == CENTER_STEERING
-// s > 0 (left) => according to left calibration function
-// s < 0 (right) => according to right calibration function
-void Navigator::setSteering(float steering) {
-  int servoDelta = 0;
-  if (steering < 0) { // right
-    steering = min(abs(steering), MAX_STEERING);
-    // Calculate servoValue from right curve
-    servoDelta = -int(RIGHT_M_SERVO_DELTA_FROM_STEERING * steering);
-  } else if (steering > 0) {
-    steering = min(steering, MAX_STEERING);
-    // Calculate servoValue from left curve
-    servoDelta = int(LEFT_M_SERVO_DELTA_FROM_STEERING * steering);
+void Navigator::setSteering(STEERING steering) {
+  int servoValue = STEERING_CENTER_SERVO;
+  if (steering == STEERING_LEFT) {
+    servoValue = STEERING_LEFT_SERVO;
+  } else if (steering == STEERING_RIGHT) {
+    servoValue = STEERING_RIGHT_SERVO;
   }
-  int servoValue = int(CENTER_STEERING_SERVO) + servoDelta;
 
   // Double safeguard on servo value right before write
-  servoValue = min(max(servoValue, MIN_STEERING_SERVO), MAX_STEERING_SERVO);
+  servoValue = min(max(servoValue, STEERING_MIN_SERVO), STEERING_MAX_SERVO);
   Serial.print("STEERING SERVO: ");
   Serial.println(servoValue);
   steeringServo.writeMicroseconds(servoValue);
