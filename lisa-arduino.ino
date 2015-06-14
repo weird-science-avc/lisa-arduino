@@ -1,7 +1,5 @@
 #include <Servo.h>
 #include "navigator.h"
-// TEST: Uncomment this to pull in tester code
-//#include "tester.h"
 
 // PIN ASSIGNMENTS
 const int SPEED_SERVO_PIN = 9;
@@ -41,8 +39,6 @@ void loop() {
     delay(3000);
     digitalWrite(LED_PIN, LOW);
 
-    // TEST: Comment this out and replace with test functions to test out;
-    //  but do not check in the test code active in here, leave NavigateTo as primary item
     navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{10.0, 0.0});
 
     // Let them know we finished our task
