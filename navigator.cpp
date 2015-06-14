@@ -39,15 +39,15 @@ void Navigator::attachSteeringServo(int pin) {
 
 void Navigator::resetSteering() {
   // Initialize steering
-  steeringServo.writeMicroseconds(STEERING_MAX_SERVO);
-  delay(1000);
-  steeringServo.writeMicroseconds(STEERING_MIN_SERVO);
-  delay(1000);
+  //steeringServo.writeMicroseconds(STEERING_MAX_SERVO);
+  //delay(1000);
+  //steeringServo.writeMicroseconds(STEERING_MIN_SERVO);
+  //delay(1000);
   steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
-  delay(500);
+  delay(100);
 }
 
-void Navigator::NavigateTo(Position start, Location target) {
+Position Navigator::NavigateTo(Position start, Location target) {
   Position position = start;
   float velocity = 0;
   STEERING steering = STEERING_CENTER;
@@ -70,12 +70,13 @@ void Navigator::NavigateTo(Position start, Location target) {
       Serial.println("GOAL ACHIEVED!!!");
       // Fully stop since we're at our final location
       setVelocity(0.0);
-      return;
+      // TODO: We probably need to wait until we 'fully' get there
+      return position;
     }
 
     // We're not close enough, so let's adjust velocity and steering if necessary
     velocity = calculateNewVelocity(velocity, targetVector.d);
-    steering = calculateNewSteering(steering, targetVector.r - position.r);
+    steering = calculateNewSteering(steering, position.r, targetVector.r);
     setVelocity(velocity);
     setSteering(steering);
 
@@ -110,6 +111,9 @@ Vector Navigator::vectorToTarget(Position p, Location t) {
   Vector v;
   v.d = sqrt(pow(deltaX, 2) + pow(deltaY, 2));
   v.r = atan2(deltaY, deltaX);
+  if (v.r < 0) {
+    v.r += 2 * PI;
+  }
   return v;
 }
 
@@ -144,7 +148,14 @@ Position Navigator::calculateNewPosition(Position position, float distance, floa
     yDelta = xDeltaOrigin * sinR + yDeltaOrigin * cosR;
   }
 
-  return Position{position.x + xDelta, position.y + yDelta, position.r + rDelta};
+  // Keep orientation from [0,2PI]
+  float r = position.r + rDelta;
+  if (r < 0) {
+    r += 2 * PI;
+  } else if (r > 2 * PI) {
+    r -= 2 * PI;
+  }
+  return Position{position.x + xDelta, position.y + yDelta, r};
 }
 
 float Navigator::calculateNewVelocity(float velocity, float distance) {
@@ -170,8 +181,11 @@ void Navigator::setVelocity(float velocity) {
   }
 }
 
-STEERING Navigator::calculateNewSteering(STEERING steering, float angle) {
-  if (angle < ORIENTATION_DELTA) {
+STEERING Navigator::calculateNewSteering(STEERING steering, float orientation, float targetOrientation) {
+  float angle = targetOrientation - orientation;
+  // Get smallest angle by reducing/increasing outside [-pi,pi] by 2pi
+  angle += (angle > PI) ? -2 * PI : (angle < -PI) ? 2 * PI : 0;
+  if (abs(angle) < ORIENTATION_DELTA) {
     return STEERING_CENTER;
   } else if (angle < 0) {
     return STEERING_RIGHT;
@@ -187,7 +201,7 @@ float Navigator::turnRadiusFromSteering(STEERING steering) {
   } else if (steering == STEERING_LEFT) {
     return STEERING_LEFT_TURN_RADIUS;
   } else { // STEERING_RIGHT
-    return STEERING_LEFT_TURN_RADIUS;
+    return STEERING_RIGHT_TURN_RADIUS;
   }
 }
 

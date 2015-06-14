@@ -33,12 +33,19 @@ void loop() {
     digitalWrite(LED_PIN, HIGH);
     delay(3000);
     digitalWrite(LED_PIN, LOW);
-    
+
     // Reset steering first
     navigator.resetSteering();
 
-    //navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{10.0, 0.0});
-    navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{5.0, 5.0});
+    // Navigate a pattern
+    Position position = Position{0.0, 0.0, 0.0};
+    position = navigator.NavigateTo(position, Location{4.0, 0.0});
+    position = navigator.NavigateTo(position, Location{6.0, 2.0});
+    position = navigator.NavigateTo(position, Location{6.0, 4.0});
+    position = navigator.NavigateTo(position, Location{4.0, 6.0});
+    position = navigator.NavigateTo(position, Location{2.0, 6.0});
+    position = navigator.NavigateTo(position, Location{0, 4.0});
+    position = navigator.NavigateTo(position, Location{0, 0});
 
     // Let them know we finished our task
     digitalWrite(LED_PIN, HIGH);

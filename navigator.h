@@ -50,10 +50,11 @@ class Navigator
     Navigator(); //Servo speedServo, Servo steeringServo);
     void attachSpeedServo(int pin);
     void attachSteeringServo(int pin);
-    
+
     void resetSteering();
-    
-    void NavigateTo(Position start, Location target);
+
+    // Returns ending position
+    Position NavigateTo(Position start, Location target);
 
   private:
     Servo speedServo, steeringServo;
@@ -65,7 +66,7 @@ class Navigator
     float turnRadiusFromSteering(STEERING steering);
     Position calculateNewPosition(Position position, float distance, float turnRadius);
     float calculateNewVelocity(float velocity, float distance);
-    STEERING calculateNewSteering(STEERING steering, float angle);
+    STEERING calculateNewSteering(STEERING steering, float orientation, float targetOrientation);
 
     // s = 0 => servoValue == 0
     // s = MIN_VELOCITY to MAX_VELOCITY according to calibration function
