@@ -22,8 +22,8 @@ bool haveArrived(float distance);
 
 Position calculateNewPosition(Position position, float distance, float turnRadius);
 float calculateNewVelocity(float speed, float distance);
-int calculateNewSteering(float steering, float angle);
+float calculateNewSteering(float steering, float angle);
 
-float turnRadiusFromSteering(int steering);
+float turnRadiusFromSteering(float steering);
 void setVelocity(float speed);
-void setSteering(int steering);
+void setSteering(float steering);

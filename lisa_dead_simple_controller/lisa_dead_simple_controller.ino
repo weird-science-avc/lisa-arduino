@@ -1,5 +1,7 @@
 #include <Servo.h>
 #include "helpers.h"
+#include "speed_calibration.h"
+#include "steering_calibration.h"
 
 // PIN ASSIGNMENTS
 const int SPEED_SERVO_PIN = 9;
@@ -103,14 +105,6 @@ void NavigateTo(Position start, Location target) {
 
 // TODO: Would like to move these out to separate C files but not working?
 
-// CALIBRATION
-const float MIN_SPEED_SERVO = 660; // slowest non-zero
-const float MAX_SPEED_SERVO = 1080; // fastest non-zero
-const float MIN_STEERING_SERVO = 1150; // all right, 66" turn radius
-// 1379 - 116" turn radius right
-const float MAX_STEERING_SERVO = 2120; // all left, 77"
-// 1864 - 146" turn radius left
-const float CENTER_STEERING_SERVO = 1608; //(MAX_STEERING_SERVO + MIN_STEERING_SERVO) / 2;
 
 // INTERNAL REFERNCE
 const float MIN_VELOCITY = 0.25; // m/s
@@ -208,38 +202,46 @@ void setVelocity(float velocity) {
   }
 }
 
-int calculateNewSteering(float steering, float angle) {
+float calculateNewSteering(float steering, float angle) {
   float targetSteering = angle * 180.0 / pi;
   float newSteering = min(max(targetSteering, -MAX_STEERING), MAX_STEERING);
   // TODO: Consider enforcing a maximum change
-  return int(newSteering);
+  return newSteering;
 }
 
-//const float MIN_SPEED_SERVO = 660; // slowest non-zero
-//const float MAX_SPEED_SERVO = 1080; // fastest non-zero
-//const float MIN_STEERING_SERVO = 1150; // all right, 66" turn radius
-//// 1379 - 116" turn radius right
-//const float MAX_STEERING_SERVO = 2120; // all left, 77"
-//// 1864 - 146" turn radius left
-//const float CENTER_STEERING_SERVO = 1608; //(MAX_STEERING_SERVO + MIN_STEERING_SERVO) / 2;
-//
-//// Used for calculations
-//const M_STEERING_RIGHT = (116.0 - 66.0) * 0.0254 / (1379.0 - 1150.0);  // ~ 0.005545
-//const B_STEERING_RIGHT = 66.0 - M_STEERING_RIGHT * 1150;               // ~ 59.623
-//const M_STEERING_LEFT = (146.0 - 77.0) * 0.0254 / (1864.0 - 2120.0);   // ~ -0.006846
-//const B_STEERING_LEFT = 77.0 - M_STEERING_LEFT * 2120.0;               // ~ 62.486
-//const RIGHT_MAX_STEERING_SERVO = ; // to match 77" turn radius and be '30' degree turn
-
-float turnRadiusFromSteering(int steering) {
-  return 0.0;
+float turnRadiusFromSteering(float steering) {
+  float turnRadius = NAN;
+  if (steering < 0) { // right
+    steering = min(abs(steering), MAX_STEERING);
+    // Calculate turnRadius from right linear equation
+    turnRadius = -(RIGHT_M_TURN_RADIUS_FROM_STEERING * steering + RIGHT_B_TURN_RADIUS_FROM_STEERING);
+  } else if (steering > 0) {
+    steering = min(steering, MAX_STEERING);
+    // Calculate servoValue from left curve
+    turnRadius = LEFT_M_TURN_RADIUS_FROM_STEERING * steering + LEFT_B_TURN_RADIUS_FROM_STEERING;
+  }
+  return turnRadius;
 }
 
+// s = 0.0 => servoValue == CENTER_STEERING
+// s > 0 (left) => according to left calibration function
+// s < 0 (right) => according to right calibration function
+void setSteering(float steering) {
+  int servoDelta = 0;
+  if (steering < 0) { // right
+    steering = min(abs(steering), MAX_STEERING);
+    // Calculate servoValue from right curve
+    servoDelta = -int(RIGHT_M_SERVO_DELTA_FROM_STEERING * steering);
+  } else if (steering > 0) {
+    steering = min(steering, MAX_STEERING);
+    // Calculate servoValue from left curve
+    servoDelta = int(LEFT_M_SERVO_DELTA_FROM_STEERING * steering);
+  }
+  int servoValue = int(CENTER_STEERING_SERVO) + servoDelta;
 
-// s = 0 => servoValue == CENTER_STEERING
-// s = 0 to MAX_STEERING (left) => CENTER_STEERING_SERVO to MAX_STEERING_SERVO (linear)
-// s = 0 to -MAX_STEERING (right) => CENTER_STEERING_SERVO to MIN_STEERING_SERVO (linear)
-void setSteering(int steering) {
-  //steeringServo.writeMicroseconds(CENTER_STEERING_SERVO);
-  steeringServo.writeMicroseconds(1864);
+  // Double safeguard on servo value right before write
+  servoValue = min(max(servoValue, MIN_STEERING_SERVO), MAX_STEERING_SERVO);
+  Serial.print("STEERING SERVO: ");
+  Serial.println(servoValue);
+  steeringServo.writeMicroseconds(servoValue);
 }
-
