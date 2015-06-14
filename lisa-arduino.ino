@@ -7,9 +7,8 @@ const int STEERING_SERVO_PIN = 10;
 const int BUTTON_PIN = 12;
 const int LED_PIN = 13;
 
-// Servo controls for speed and steering
-Servo speedServo, steeringServo;
-Navigator navigator(speedServo, steeringServo);
+// Create navigator
+Navigator navigator;
 
 // This is called once
 void setup() {
@@ -21,11 +20,8 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
 
   // Attach servos to pins
-  speedServo.attach(SPEED_SERVO_PIN);
-  steeringServo.attach(STEERING_SERVO_PIN);
-
-  // Initialize to stopped on speed servo
-  speedServo.writeMicroseconds(0);
+  navigator.attachSpeedServo(SPEED_SERVO_PIN);
+  navigator.attachSteeringServo(STEERING_SERVO_PIN);
 }
 
 // This is called on a loop
@@ -37,6 +33,9 @@ void loop() {
     digitalWrite(LED_PIN, HIGH);
     delay(3000);
     digitalWrite(LED_PIN, LOW);
+    
+    // Reset steering first
+    navigator.resetSteering();
 
     //navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{10.0, 0.0});
     navigator.NavigateTo(Position{0.0, 0.0, 0.0}, Location{5.0, 5.0});

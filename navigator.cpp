@@ -19,9 +19,32 @@ void serialPrintLocation(char* prefix, Location l) {
   Serial.println(")");
 }
 
-Navigator::Navigator(Servo speedServo, Servo steeringServo) {
-  speedServo = speedServo;
-  steeringServo = steeringServo;
+//Servo speedServo, steeringServo;
+
+Navigator::Navigator() { //Servo speedServo, Servo steeringServo) {
+  //speedServo = speedServo;
+  //steeringServo = steeringServo;
+}
+
+void Navigator::attachSpeedServo(int pin) {
+  speedServo.attach(pin);
+  // Initialize motor
+  speedServo.writeMicroseconds(0);
+}
+
+void Navigator::attachSteeringServo(int pin) {
+  steeringServo.attach(pin);
+  steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
+}
+
+void Navigator::resetSteering() {
+  // Initialize steering
+  steeringServo.writeMicroseconds(STEERING_MAX_SERVO);
+  delay(1000);
+  steeringServo.writeMicroseconds(STEERING_MIN_SERVO);
+  delay(1000);
+  steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
+  delay(500);
 }
 
 void Navigator::NavigateTo(Position start, Location target) {

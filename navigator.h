@@ -47,7 +47,12 @@ void serialPrintLocation(char* prefix, Location l);
 class Navigator
 {
   public:
-    Navigator(Servo speedServo, Servo steeringServo);
+    Navigator(); //Servo speedServo, Servo steeringServo);
+    void attachSpeedServo(int pin);
+    void attachSteeringServo(int pin);
+    
+    void resetSteering();
+    
     void NavigateTo(Position start, Location target);
 
   private:
