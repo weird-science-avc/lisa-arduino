@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include "position_tracker.h"
 #include "navigator.h"
 
 // PIN ASSIGNMENTS
@@ -7,8 +8,9 @@ const int STEERING_SERVO_PIN = 10;
 const int BUTTON_PIN = 12;
 const int LED_PIN = 13;
 
-// Create navigator
-Navigator navigator;
+// Create helper objects
+PositionTracker tracker;
+Navigator navigator(LED_PIN);
 
 // This is called once
 void setup() {
@@ -19,35 +21,53 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
 
-  // Attach servos to pins
+  // PositionTracker initialization
+
+  // Navigator initialization
   navigator.attachSpeedServo(SPEED_SERVO_PIN);
   navigator.attachSteeringServo(STEERING_SERVO_PIN);
 }
 
-// This is called on a loop
+Waypoint waypoints[] = {
+  Waypoint{4.0, 0.0, 0.1},
+  Waypoint{6.0, 2.0, 0.1},
+  Waypoint{6.0, 4.0, 0.1},
+  Waypoint{4.0, 6.0, 0.1},
+  Waypoint{2.0, 6.0, 0.1},
+  Waypoint{0.0, 4.0, 0.1},
+  Waypoint{0.0, 0.0, 0.1}
+};
+
+long timestamp = 0;
+Position position;
 void loop() {
-  if (digitalRead(BUTTON_PIN) == HIGH) {
-    // Make sure our light is off, turn on to warn, turn off to work
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-    digitalWrite(LED_PIN, HIGH);
-    delay(3000);
-    digitalWrite(LED_PIN, LOW);
+  // Always calculate new timestamp and delta so we can use in loop
+  long newTimestamp = millis();
+  long timeElapsedMs = newTimestamp - timestamp;
+  timestamp = newTimestamp;
 
-    // Reset steering first
-    navigator.resetSteering();
+  // Do any operations that we need faster (like fast sensor polling) on each loop iteration
+  bool buttonPush = digitalRead(BUTTON_PIN) == HIGH;
 
-    // Navigate a pattern
-    Position position = Position{0.0, 0.0, 0.0};
-    position = navigator.NavigateTo(position, Location{4.0, 0.0});
-    position = navigator.NavigateTo(position, Location{6.0, 2.0});
-    position = navigator.NavigateTo(position, Location{6.0, 4.0});
-    position = navigator.NavigateTo(position, Location{4.0, 6.0});
-    position = navigator.NavigateTo(position, Location{2.0, 6.0});
-    position = navigator.NavigateTo(position, Location{0, 4.0});
-    position = navigator.NavigateTo(position, Location{0, 0});
+  // Track position (every X ms)
+  if (timeElapsedMs > 10) {
+    position = tracker.update(navigator.getVelocity() * timeElapsedMs, navigator.getTurnRadius());
+  }
 
-    // Let them know we finished our task
-    digitalWrite(LED_PIN, HIGH);
+  // If we're navigating, update navigation at a certain frequency with current position
+  if (navigator.isRunning()) {
+    // Adjust navigation (every X ms)
+    if (timeElapsedMs > 100) {
+      navigator.update(position);
+    }
+  } else {
+    // Otherwise potentially start running if button is pushed
+    if (buttonPush) {
+      digitalWrite(LED_PIN, HIGH);
+      delay(3000);
+      digitalWrite(LED_PIN, LOW);
+      tracker.reset();
+      navigator.start(waypoints);
+    }
   }
 }

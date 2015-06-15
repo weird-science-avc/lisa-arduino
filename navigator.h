@@ -5,6 +5,7 @@
 #include <Servo.h>
 #include "speed_calibration.h"
 #include "steering_calibration.h"
+#include "data_types.h"
 
 // INTERNAL REFERNCE
 const float MIN_VELOCITY = 0.25; // m/s
@@ -17,62 +18,43 @@ const float ARRIVE_DELTA = 0.1;
 // Distance (m) at which we start slowing down to stop at the target
 const float APPROACH_DELTA = 1.0;
 
-// Use enum for steering; see steering_calibration.h for details
 enum STEERING {
   STEERING_LEFT,
   STEERING_CENTER,
   STEERING_RIGHT
 };
 
-
-struct Location {
-  float x;
-  float y;
-};
-
-struct Position {
-  float x;
-  float y;
-  float r;
-};
-
-struct Vector {
-  float r;
-  float d;
-};
-
-void serialPrintPosition(char* prefix, Position p);
-void serialPrintLocation(char* prefix, Location l);
-
 class Navigator
 {
   public:
-    Navigator(); //Servo speedServo, Servo steeringServo);
+    Navigator(int ledPin);
     void attachSpeedServo(int pin);
     void attachSteeringServo(int pin);
 
-    void resetSteering();
+    float getVelocity();
+    float getTurnRadius();
 
-    // Returns ending position
-    Position NavigateTo(Position start, Location target);
+    // Start navigation amongst waypoints
+    void start(Waypoint waypoints[]);
+    bool isRunning();
+
+    // Tells the navigator to update its course, providing relavant external information as necessary
+    void update(Position p);
 
   private:
+    int ledPin;
+    Waypoint waypoints[];
+    int waypointIndex = 0;
+    bool running = false;
+    float velocity;
+    STEERING steering;
     Servo speedServo, steeringServo;
 
-    Vector vectorToTarget(Position p, Location t);
-    bool haveArrived(float distance);
+    // TODO: Consider going back to speed as an enum like steering, having specific values
+    void adjustVelocity(float distance);
+    void adjustSteering(float orientation, float targetOrientation);
 
-    // turnRadius of 0.0 or NAN means straight
-    float turnRadiusFromSteering(STEERING steering);
-    Position calculateNewPosition(Position position, float distance, float turnRadius);
-    float calculateNewVelocity(float velocity, float distance);
-    STEERING calculateNewSteering(STEERING steering, float orientation, float targetOrientation);
-
-    // s = 0 => servoValue == 0
-    // s = MIN_VELOCITY to MAX_VELOCITY according to calibration function
     void setVelocity(float velocity);
-
-
     void setSteering(STEERING steering);
 };
 
