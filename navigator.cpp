@@ -16,7 +16,14 @@ void Navigator::attachSteeringServo(int pin) {
 }
 
 float Navigator::getVelocity() {
-  return velocity;
+  // TODO: Change to switch if supported
+  if (speed == SPEED_STOPPED) {
+    return 0.0;
+  } else if (speed == SPEED_LOW) {
+    return SPEED_LOW_VELOCITY;
+  } else { // SPEED_HIGH
+    return SPEED_HIGH_VELOCITY;
+  }
 }
 
 float Navigator::getTurnRadius() {
@@ -60,7 +67,7 @@ void Navigator::update(Position p) {
     if (waypointIndex >= sizeof(waypoints)/sizeof(Waypoint)) {
       Serial.println("**** ENDING NAVIGATION ****");
       // TODO: Can we break here? Or maybe we should go way past it?
-      setVelocity(0.0);
+      setSpeed(SPEED_STOPPED);
       running = false;
       return;
     }
@@ -72,7 +79,7 @@ void Navigator::update(Position p) {
   }
 
   // Now we should make adjustments to get to the waypoint we're aiming at
-  adjustVelocity(waypointVector.d);
+  adjustSpeed(waypointVector.d);
   adjustSteering(p.r, waypointVector.r);
 
   // Output what we're doing
@@ -80,33 +87,29 @@ void Navigator::update(Position p) {
   Serial.print(waypointVector.d);
   Serial.print(",dir=");
   Serial.print(waypointVector.r * 180.0 / PI);
-  Serial.print(", VELOCITY: ");
-  Serial.print(velocity);
+  Serial.print(", SPEED: ");
+  Serial.print(speed == SPEED_STOPPED ? "stopped" : speed == SPEED_LOW ? "low" : "high");
   Serial.print(" m/s, STEERING: ");
   Serial.println(steering == STEERING_LEFT ? "left" : steering == STEERING_CENTER ? "center" : "right");
 }
 
-void Navigator::adjustVelocity(float distance) {
-  // TODO: Instead of this just go slow/fast depending on where we are
-  float targetVelocity = distance / APPROACH_DELTA * MAX_VELOCITY;
-  float newVelocity = min(max(targetVelocity, MIN_VELOCITY), MAX_VELOCITY);
-  setVelocity(newVelocity);
+void Navigator::adjustSpeed(float distance) {
+  SPEED newSpeed = (distance > APPROACH_DELTA) ? SPEED_HIGH : SPEED_LOW;
+  setSpeed(newSpeed);
 }
 
-void Navigator::setVelocity(float v) {
-  if (v < MIN_VELOCITY) {
-    speedServo.writeMicroseconds(0);
-  } else {
-    v = min(v, MAX_VELOCITY);
-    // TODO: Move these values into speed_calibration so they can be modified
-    int servoValue = int(v * 95.964 + 659.19);
-    // Double safeguard on servo value right before write
-    servoValue = min(max(servoValue, MIN_SPEED_SERVO), MAX_SPEED_SERVO);
-    Serial.print("SPEED SERVO: ");
-    Serial.println(servoValue);
-    speedServo.writeMicroseconds(servoValue);
-    velocity = v;
+void Navigator::setSpeed(SPEED s) {
+  int servoValue = SPEED_STOPPED_SERVO;
+  if (s == SPEED_LOW) {
+    servoValue = SPEED_LOW_SERVO;
+  } else if (s ==  SPEED_HIGH) {
+    servoValue = SPEED_HIGH_SERVO;
   }
+
+  Serial.print("SPEED SERVO: ");
+  Serial.println(servoValue);
+  speedServo.writeMicroseconds(servoValue);
+  speed = s;
 }
 
 void Navigator::adjustSteering(float orientation, float targetOrientation) {
@@ -133,8 +136,6 @@ void Navigator::setSteering(STEERING s) {
     servoValue = STEERING_RIGHT_SERVO;
   }
 
-  // Double safeguard on servo value right before write
-  servoValue = min(max(servoValue, STEERING_MIN_SERVO), STEERING_MAX_SERVO);
   Serial.print("STEERING SERVO: ");
   Serial.println(servoValue);
   steeringServo.writeMicroseconds(servoValue);

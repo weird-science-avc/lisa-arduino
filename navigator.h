@@ -7,16 +7,16 @@
 #include "steering_calibration.h"
 #include "data_types.h"
 
-// INTERNAL REFERNCE
-const float MIN_VELOCITY = 0.25; // m/s
-const float MAX_VELOCITY = 2.0; // m/s
-
 // Angle (radians) under which we won't make steering corrections
 const float ORIENTATION_DELTA = 5.0 * PI / 180.0;
-// Distance (m) at which to say we're close enough to the target to say we're there
-const float ARRIVE_DELTA = 0.1;
-// Distance (m) at which we start slowing down to stop at the target
+// Distance (m) at which we slow down
 const float APPROACH_DELTA = 1.0;
+
+enum SPEED {
+  SPEED_STOPPED,
+  SPEED_LOW,
+  SPEED_HIGH
+};
 
 enum STEERING {
   STEERING_LEFT,
@@ -46,15 +46,14 @@ class Navigator
     Waypoint waypoints[];
     int waypointIndex = 0;
     bool running = false;
-    float velocity;
+    SPEED speed;
     STEERING steering;
     Servo speedServo, steeringServo;
 
-    // TODO: Consider going back to speed as an enum like steering, having specific values
-    void adjustVelocity(float distance);
+    void adjustSpeed(float distance);
     void adjustSteering(float orientation, float targetOrientation);
 
-    void setVelocity(float velocity);
+    void setSpeed(SPEED speed);
     void setSteering(STEERING steering);
 };
 
