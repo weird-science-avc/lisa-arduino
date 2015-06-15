@@ -1,17 +1,29 @@
 #include "Arduino.h"
 #include "position_tracker.h"
 
+// NOTE: If/when we have a functioning IMU we can use it to track angle change
+// and then calculate turnRadius = distance / angle and ignore the one
+// calculated from steering as well
+
 void PositionTracker::reset() {
   position = Position{0, 0, 0};
+  lastWheelEncoderTicks = gWheelEncoderTicks;
 }
 
 // turnRadius of 0.0 or NAN means straight
 Position PositionTracker::update(float distance, float turnRadius) {
+  // Figure out wheel encoder delta and update stored value
+  int wheelEncoderTicks = gWheelEncoderTicks;
+  int wheelEncoderDelta = wheelEncoderTicks - lastWheelEncoderTicks;
+  lastWheelEncoderTicks = wheelEncoderTicks;
+
+  // TODO: When we have wheel encoder calibraated we can override distance with its value
+  //distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
+
+  // Figure out position deltas based on straight or banked travel
   float xDelta = 0.0;
   float yDelta = 0.0;
   float rDelta = 0.0;
-
-  // Figure out position deltas based on straight or banked travel
   if (isnan(turnRadius) || turnRadius == 0.0) {
     //Serial.println("Straight motion");
     xDelta = distance * cos(position.r);

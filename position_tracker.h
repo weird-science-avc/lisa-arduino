@@ -3,6 +3,9 @@
 
 #include "data_types.h"
 
+// Access global wheel encoder ticks
+extern volatile int gWheelEncoderTicks;
+
 class PositionTracker
 {
   public:
@@ -11,6 +14,7 @@ class PositionTracker
 
   private:
     Position position;
+    int lastWheelEncoderTicks = 0;
 };
 
 #endif

@@ -12,8 +12,20 @@ const int LED_PIN = 13;
 PositionTracker tracker;
 Navigator navigator(LED_PIN);
 
+
+// Global tick counter for wheel encoder
+volatile int gWheelEncoderTicks = 0;
+
+void isrWheelEncoder() {
+  // Increment
+  gWheelEncoderTicks++;
+}
+
 // This is called once
 void setup() {
+  // Attach to interrupt 0 for wheel encoder
+  attachInterrupt(0, isrWheelEncoder, CHANGE);
+
   // Start serial at 9600 baud
   Serial.begin(9600);
 
