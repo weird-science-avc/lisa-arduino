@@ -29,9 +29,9 @@ void serialPrintLocation(char* prefix, Location l) {
   Serial.println(")");
 }
 
-Vector getVector(Position p, Waypoint w) {
-  float deltaY = w.y - p.y;
-  float deltaX = w.x - p.x;
+Vector getVector(float x0, float y0, float x1, float y1) {
+  float deltaY = y1 - y0;
+  float deltaX = x1 - x0;
   Vector v;
   v.d = sqrt(pow(deltaX, 2) + pow(deltaY, 2));
   v.r = atan2(deltaY, deltaX);

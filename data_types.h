@@ -28,7 +28,7 @@ void serialPrintPosition(char* prefix, Position p);
 void serialPrintLocation(char* prefix, Location l);
 
 // Returns a vector with magnitude and angle [0, 2PI]
-Vector getVector(Position p, Waypoint w);
+Vector getVector(float x0, float y0, float x1, float y1);
 bool haveArrived(Waypoint w, float distance);
 
 #endif

@@ -53,29 +53,31 @@ bool Navigator::isRunning() {
 void Navigator::update(Position p) {
   // Get our current waypoint and calculate a vector to it
   Waypoint waypoint = waypoints[waypointIndex];
-  Vector waypointVector = getVector(p, waypoint);
+  Vector waypointVector = getVector(p.x, p.y, waypoint.x, waypoint.y);
 
-  // Check with our new position if we've arrived and if so move to the next waypoint
-  // TODO: Let's make this smarter so that we have a nextWaypoint too and decide to sometimes just move forward
-  if (haveArrived(waypoint, waypointVector.d)) {
-    serialPrintWaypoint("FINISH WAYPOINT: ", waypointIndex, waypoint);
-
-    // Move to the next waypoint
-    waypointIndex++;
-
-    // If we'd done, just boogie out
-    if (waypointIndex >= sizeof(waypoints)/sizeof(Waypoint)) {
-      Serial.println("**** ENDING NAVIGATION ****");
-      // TODO: Can we break here? Or maybe we should go way past it?
-      setSpeed(SPEED_STOPPED);
-      running = false;
-      return;
+  // If there's a next waypoint, think about promoting it
+  int waypointsLength = sizeof(waypoints) / sizeof(Waypoint);
+  if (waypointIndex + 1 < waypointsLength) {
+    Waypoint nextWaypoint = waypoints[waypointIndex + 1];
+    Vector nextWaypointVector = getVector(p.x, p.y, nextWaypoint.x, nextWaypoint.y);
+    Vector waypointToWaypointVector = getVector(waypoint.x, waypoint.y, nextWaypoint.x, nextWaypoint.y);
+    // If the distance to our next waypoint is less than the distance between them, we've passed by so promote
+    // TODO: Phil suggested we could actual remove current waypoint's tolerance from our distance to next as well and it'd be okay
+    if (nextWaypointVector.d < waypointToWaypointVector.d) {
+      serialPrintWaypoint("FINISH WAYPOINT: ", waypointIndex, waypoint);
+      waypointIndex++;
+      waypoint = nextWaypoint;
+      waypointVector = nextWaypointVector;
+      serialPrintWaypoint("START WAYPOINT: ", waypointIndex, waypoint);
     }
+  }
 
-    // Not done, so get a new waypoint and waypointVector
-    waypoint = waypoints[waypointIndex];
-    waypointVector = getVector(p, waypoint);
-    serialPrintWaypoint("START WAYPOINT: ", waypointIndex, waypoint);
+  // We didn't promote, so if we're at our waypoint, let's call it quits
+  if (haveArrived(waypoint, waypointVector.d)) {
+    Serial.println("**** ENDING NAVIGATION ****");
+    setSpeed(SPEED_STOPPED);
+    running = false;
+    return;
   }
 
   // Now we should make adjustments to get to the waypoint we're aiming at
