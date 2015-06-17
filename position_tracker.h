@@ -12,7 +12,7 @@ const float WHEEL_ENCODER_M_DISTANCE_FROM_TICKS = 0.0544737;
 class PositionTracker
 {
   public:
-    void reset();
+    Position reset();
     Position update(float distance, float turnRadius);
 
   private:

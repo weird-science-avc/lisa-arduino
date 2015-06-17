@@ -1,25 +1,25 @@
 #include "navigator.h"
 
 Navigator::Navigator(int ledPin) {
-  ledPin = ledPin;
+  this->ledPin = ledPin;
 }
 
 void Navigator::attachSpeedServo(int pin) {
-  speedServo.attach(pin);
+  this->speedServo.attach(pin);
   // Initialize motor
-  speedServo.writeMicroseconds(0);
+  this->speedServo.writeMicroseconds(0);
 }
 
 void Navigator::attachSteeringServo(int pin) {
-  steeringServo.attach(pin);
-  steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
+  this->steeringServo.attach(pin);
+  this->steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
 }
 
 float Navigator::getVelocity() {
   // TODO: Change to switch if supported
-  if (speed == SPEED_STOPPED) {
+  if (this->speed == SPEED_STOPPED) {
     return 0.0;
-  } else if (speed == SPEED_LOW) {
+  } else if (this->speed == SPEED_LOW) {
     return SPEED_LOW_VELOCITY;
   } else { // SPEED_HIGH
     return SPEED_HIGH_VELOCITY;
@@ -28,71 +28,125 @@ float Navigator::getVelocity() {
 
 float Navigator::getTurnRadius() {
   // TODO: Change to switch if supported
-  if (steering == STEERING_CENTER) {
+  if (this->steering == STEERING_CENTER) {
     return NAN;
-  } else if (steering == STEERING_LEFT) {
+  } else if (this->steering == STEERING_LEFT) {
     return STEERING_LEFT_TURN_RADIUS;
   } else { // STEERING_RIGHT
     return STEERING_RIGHT_TURN_RADIUS;
   }
 }
 
-void Navigator::start(Waypoint waypoints[]) {
+void Navigator::start(Waypoint* waypoints, int waypointsLength) {
   // Save our waypoints and set our index
-  waypoints = waypoints;
-  waypointIndex = 0;
-  Serial.println("*** STARTING NAVIGATION ***");
-  serialPrintWaypoint("START WAYPOINT: ", waypointIndex, waypoints[waypointIndex]);
-  running = true;
+  this->waypoints = waypoints;
+  this->waypointsLength = waypointsLength;
+  this->waypointIndex = 0;
+  if (LOG_NAVIGATION_INFO) {
+    Serial.print("*** STARTING NAVIGATION -- ");
+    Serial.print(this->waypointsLength);
+    Serial.println(" waypoints ***");
+  }
+  if (LOG_NAVIGATION_INFO) {
+    serialPrintlnWaypoint("START WAYPOINT: ", this->waypointIndex, this->waypoints[waypointIndex]);
+  }
+  this->running = true;
 }
 
 bool Navigator::isRunning() {
-  return running;
+  return this->running;
 }
 
 void Navigator::update(Position p) {
   // Get our current waypoint and calculate a vector to it
-  Waypoint waypoint = waypoints[waypointIndex];
+  Waypoint waypoint = this->waypoints[this->waypointIndex];
   Vector waypointVector = getVector(p.x, p.y, waypoint.x, waypoint.y);
 
   // If there's a next waypoint, think about promoting it
-  int waypointsLength = sizeof(waypoints) / sizeof(Waypoint);
-  if (waypointIndex + 1 < waypointsLength) {
-    Waypoint nextWaypoint = waypoints[waypointIndex + 1];
+  if (this->waypointIndex + 1 < this->waypointsLength) {
+    Waypoint nextWaypoint = waypoints[this->waypointIndex + 1];
     Vector nextWaypointVector = getVector(p.x, p.y, nextWaypoint.x, nextWaypoint.y);
     Vector waypointToWaypointVector = getVector(waypoint.x, waypoint.y, nextWaypoint.x, nextWaypoint.y);
     // If the distance to our next waypoint is less than the distance between them, we've passed by so promote
     // TODO: Phil suggested we could actual remove current waypoint's tolerance from our distance to next as well and it'd be okay
     if (nextWaypointVector.d < waypointToWaypointVector.d) {
-      serialPrintWaypoint("FINISH WAYPOINT: ", waypointIndex, waypoint);
-      waypointIndex++;
+      if (LOG_NAVIGATION_INFO) {
+        // TODO: Calculate time to finish waypoint
+        serialPrintWaypoint("FINISH WAYPOINT: ", this->waypointIndex, waypoint);
+        serialPrintPosition(" (position:", p);
+        Serial.println(")");
+      }
+
+      // Move to the next waypoint
+      this->waypointIndex++;
       waypoint = nextWaypoint;
       waypointVector = nextWaypointVector;
-      serialPrintWaypoint("START WAYPOINT: ", waypointIndex, waypoint);
+      if (LOG_NAVIGATION_INFO) {
+        serialPrintWaypoint("START WAYPOINT: ", this->waypointIndex, waypoint);
+        serialPrintPosition(" (position:", p);
+        Serial.println(")");
+      }
     }
   }
 
-  // We didn't promote, so if we're at our waypoint, let's call it quits
+  // Now whatever we're aiming for, see if we're there
   if (haveArrived(waypoint, waypointVector.d)) {
-    Serial.println("**** ENDING NAVIGATION ****");
-    setSpeed(SPEED_STOPPED);
-    running = false;
-    return;
+    if (LOG_NAVIGATION_INFO) {
+      // TODO: Calculate time to finish waypoint
+      serialPrintWaypoint("FINISH WAYPOINT: ", this->waypointIndex, waypoint);
+      serialPrintPosition(" (position:", p);
+      Serial.println(")");
+    }
+
+    // Move to next waypoint, detect end
+    this->waypointIndex++;
+    if (this->waypointIndex >= this->waypointsLength) {
+      if (LOG_NAVIGATION_INFO) {
+        // TODO: Calculate time to finish navigation
+        Serial.println("**** ENDING NAVIGATION ****");
+      }
+      setSpeed(SPEED_STOPPED);
+      this->running = false;
+      // Blink lights 3 times to let people know we're done
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
+      delay(100);
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
+      delay(100);
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
+      return;
+    }
+
+    // Not end, so update waypoint pointers
+    waypoint = this->waypoints[this->waypointIndex];
+    waypointVector = getVector(p.x, p.y, waypoint.x, waypoint.y);
+    if (LOG_NAVIGATION_INFO) {
+      serialPrintWaypoint("START WAYPOINT: ", this->waypointIndex, waypoint);
+      serialPrintPosition(" (position:", p);
+      Serial.println(")");
+    }
   }
 
   // Now we should make adjustments to get to the waypoint we're aiming at
   adjustSpeed(waypointVector.d);
   adjustSteering(p.r, waypointVector.r);
 
-  // Output what we're doing
-  Serial.print("waypointVector: dist=");
-  Serial.print(waypointVector.d);
-  Serial.print(",dir=");
-  Serial.print(waypointVector.r * 180.0 / PI);
-  Serial.print(", SPEED: ");
-  Serial.print(speed == SPEED_STOPPED ? "stopped" : speed == SPEED_LOW ? "low" : "high");
-  Serial.print(" m/s, STEERING: ");
-  Serial.println(steering == STEERING_LEFT ? "left" : steering == STEERING_CENTER ? "center" : "right");
+  // Output what we're doing if debug
+  if (LOG_NAVIGATION_DEBUG) {
+    Serial.print("waypointVector: dist=");
+    Serial.print(waypointVector.d);
+    Serial.print(",dir=");
+    Serial.print(waypointVector.r * 180.0 / PI);
+    Serial.print(", SPEED: ");
+    Serial.print(this->speed == SPEED_STOPPED ? "stopped" : this->speed == SPEED_LOW ? "low" : "high");
+    Serial.print(", STEERING: ");
+    Serial.println(this->steering == STEERING_LEFT ? "left" : this->steering == STEERING_CENTER ? "center" : "right");
+  }
 }
 
 void Navigator::adjustSpeed(float distance) {
@@ -108,10 +162,12 @@ void Navigator::setSpeed(SPEED s) {
     servoValue = SPEED_HIGH_SERVO;
   }
 
-  Serial.print("SPEED SERVO: ");
-  Serial.println(servoValue);
-  speedServo.writeMicroseconds(servoValue);
-  speed = s;
+  if (LOG_NAVIGATION_DEBUG) {
+    Serial.print("SPEED SERVO: ");
+    Serial.println(servoValue);
+  }
+  this->speedServo.writeMicroseconds(servoValue);
+  this->speed = s;
 }
 
 void Navigator::adjustSteering(float orientation, float targetOrientation) {
@@ -138,8 +194,10 @@ void Navigator::setSteering(STEERING s) {
     servoValue = STEERING_RIGHT_SERVO;
   }
 
-  Serial.print("STEERING SERVO: ");
-  Serial.println(servoValue);
-  steeringServo.writeMicroseconds(servoValue);
-  steering = s;
+  if (LOG_NAVIGATION_DEBUG) {
+    Serial.print("STEERING SERVO: ");
+    Serial.println(servoValue);
+  }
+  this->steeringServo.writeMicroseconds(servoValue);
+  this->steering = s;
 }

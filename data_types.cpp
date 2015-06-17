@@ -1,13 +1,31 @@
 #include "Arduino.h"
 #include "data_types.h"
 
-void serialPrintWaypoint(char* prefix, int index, Waypoint w) {
-   Serial.print(prefix);
+void serialPrintLocation(char* prefix, Location l) {
+  Serial.print(prefix);
   Serial.print("(");
+  Serial.print(l.x);
+  Serial.print(",");
+  Serial.print(l.y);
+  Serial.print(")");
+}
+void serialPrintlnLocation(char* prefix, Location l) {
+  serialPrintLocation(prefix, l);
+  Serial.println();
+}
+
+void serialPrintWaypoint(char* prefix, int index, Waypoint w) {
+  Serial.print(prefix);
+  Serial.print(index);
+  Serial.print(" -- (");
   Serial.print(w.x);
   Serial.print(",");
   Serial.print(w.y);
-  Serial.println(")");
+  Serial.print(")");
+}
+void serialPrintlnWaypoint(char* prefix, int index, Waypoint w) {
+  serialPrintWaypoint(prefix, index, w);
+  Serial.println();
 }
 
 void serialPrintPosition(char* prefix, Position p) {
@@ -17,16 +35,22 @@ void serialPrintPosition(char* prefix, Position p) {
   Serial.print(",");
   Serial.print(p.y);
   Serial.print("):");
-  Serial.println(p.r * 180.0 / PI);
+  Serial.print(p.r * 180.0 / PI);
+}
+void serialPrintlnPosition(char* prefix, Position p) {
+  serialPrintPosition(prefix, p);
+  Serial.println();
 }
 
-void serialPrintLocation(char* prefix, Location l) {
+void serialPrintVector(char* prefix, Vector v) {
   Serial.print(prefix);
-  Serial.print("(");
-  Serial.print(l.x);
-  Serial.print(",");
-  Serial.print(l.y);
-  Serial.println(")");
+  Serial.print(v.d);
+  Serial.print("@");
+  Serial.print(v.r * 180.0 / PI);
+}
+void serialPrintlnVector(char* prefix, Vector v) {
+  serialPrintVector(prefix, v);
+  Serial.println();
 }
 
 Vector getVector(float x0, float y0, float x1, float y1) {

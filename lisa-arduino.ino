@@ -32,6 +32,7 @@ void setup() {
   // Setup pins correctly
   pinMode(BUTTON_PIN, INPUT);
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
   // PositionTracker initialization
 
@@ -49,28 +50,45 @@ Waypoint waypoints[] = {
   Waypoint{0.0, 4.0, 0.1},
   Waypoint{0.0, 0.0, 0.1}
 };
+int waypointsLength =  sizeof(waypoints) / sizeof(Waypoint);
 
-long timestamp = 0;
+long lastPositionTimestamp = 0;
+long lastNavigationTimestamp = 0;
 Position position;
 void loop() {
   // Always calculate new timestamp and delta so we can use in loop
-  long newTimestamp = millis();
-  long timeElapsedMs = newTimestamp - timestamp;
-  timestamp = newTimestamp;
+  long timestamp;
 
   // Do any operations that we need faster (like fast sensor polling) on each loop iteration
   bool buttonPush = digitalRead(BUTTON_PIN) == HIGH;
 
-  // Track position (every X ms)
-  if (timeElapsedMs > 10) {
-    position = tracker.update(navigator.getVelocity() * timeElapsedMs, navigator.getTurnRadius());
+  // Track position (every X ms always)
+  timestamp = millis();
+  long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
+  float velocity = navigator.getVelocity();
+  float turnRadius = navigator.getTurnRadius();
+  if (positionTimeElapsedMs > 10) {
+    lastPositionTimestamp = timestamp;
+    position = tracker.update(velocity * float(positionTimeElapsedMs) / 1000.0, turnRadius);
   }
 
   // If we're navigating, update navigation at a certain frequency with current position
   if (navigator.isRunning()) {
     // Adjust navigation (every X ms)
-    if (timeElapsedMs > 100) {
+    timestamp = millis();
+    long navigationTimeElapsedMs = timestamp - lastNavigationTimestamp;
+    if (navigationTimeElapsedMs > 100) {
+      lastNavigationTimestamp = timestamp;
       navigator.update(position);
+      // If velocity and/or turnRadius changed, force a position update
+      float newVelocity = navigator.getVelocity();
+      float newTurnRadius = navigator.getTurnRadius();
+      if (newVelocity != velocity || newTurnRadius != turnRadius) {
+        timestamp = millis();
+        long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
+        lastPositionTimestamp = timestamp;
+        position = tracker.update(velocity * float(positionTimeElapsedMs) / 1000.0, turnRadius);
+      } 
     }
   } else {
     // Otherwise potentially start running if button is pushed
@@ -78,8 +96,8 @@ void loop() {
       digitalWrite(LED_PIN, HIGH);
       delay(3000);
       digitalWrite(LED_PIN, LOW);
-      tracker.reset();
-      navigator.start(waypoints);
+      position = tracker.reset();
+      navigator.start(waypoints, waypointsLength);
     }
   }
 }

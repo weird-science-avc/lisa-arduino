@@ -1,13 +1,15 @@
 #include "Arduino.h"
 #include "position_tracker.h"
 
-// NOTE: If/when we have a functioning IMU we can use it to track angle change
-// and then calculate turnRadius = distance / angle and ignore the one
-// calculated from steering as well
-
-void PositionTracker::reset() {
-  position = Position{0, 0, 0};
-  lastWheelEncoderTicks = gWheelEncoderTicks;
+Position PositionTracker::reset() {
+  this->position = Position{0, 0, 0};
+  this->lastWheelEncoderTicks = gWheelEncoderTicks;
+  if (LOG_POSITION_DEBUG) {
+    serialPrintlnPosition("POSITION(RESET): ", this->position);
+    Serial.print("WHEEL ENCODER: ");
+    Serial.println(this->lastWheelEncoderTicks);
+  }
+  return this->position;
 }
 
 // turnRadius of 0.0 or NAN means straight
@@ -27,8 +29,8 @@ Position PositionTracker::update(float distance, float turnRadius) {
   float rDelta = 0.0;
   if (isnan(turnRadius) || turnRadius == 0.0) {
     //Serial.println("Straight motion");
-    xDelta = distance * cos(position.r);
-    yDelta = distance * sin(position.r);
+    xDelta = distance * cos(this->position.r);
+    yDelta = distance * sin(this->position.r);
   } else {
     //Serial.println("Banked motion");
     // Get the rDelta
@@ -39,22 +41,27 @@ Position PositionTracker::update(float distance, float turnRadius) {
     float yDeltaOrigin = turnRadius * (-cos(rDelta) + 1.0);
 
     // Now we need to rotate those deltas around (0,0) by our current orientation so they're correct
-    float sinR = sin(position.r);
-    float cosR = cos(position.r);
+    float sinR = sin(this->position.r);
+    float cosR = cos(this->position.r);
     xDelta = xDeltaOrigin * cosR - yDeltaOrigin * sinR;
     yDelta = xDeltaOrigin * sinR + yDeltaOrigin * cosR;
   }
 
   // Update position and return
-  position.x += xDelta;
-  position.y += yDelta;
-  position.r += rDelta;
+  Position newPosition;
+  newPosition.x = this->position.x + xDelta;
+  newPosition.y = this->position.y + yDelta;
+  newPosition.r = this->position.r + rDelta;
   // Keep orientation from [0,2PI]
   if (position.r < 0) {
-    position.r += 2 * PI;
+    newPosition.r += 2 * PI;
   } else if (position.r > 2 * PI) {
-    position.r -= 2 * PI;
+    newPosition.r -= 2 * PI;
   }
-  serialPrintPosition("POSITION: ", position);
-  return position;
+  // TODO: Write equality overloads for Position
+  if (LOG_POSITION_DEBUG && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
+    serialPrintlnPosition("POSITION: ", newPosition);
+  }
+  this->position = newPosition;
+  return this->position;
 }
