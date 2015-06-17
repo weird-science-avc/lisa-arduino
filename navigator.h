@@ -41,6 +41,9 @@ class Navigator
     // Tells the navigator to update its course, providing relavant external information as necessary
     void update(Position p);
 
+    SPEED getSpeed();
+    STEERING getSteering();
+
   private:
     int ledPin;
     Waypoint* waypoints = 0;
