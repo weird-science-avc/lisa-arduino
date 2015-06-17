@@ -15,6 +15,10 @@ void Navigator::attachSteeringServo(int pin) {
   this->steeringServo.writeMicroseconds(STEERING_CENTER_SERVO);
 }
 
+SPEED Navigator::getSpeed() {
+  return this->speed;
+}
+
 float Navigator::getVelocity() {
   // TODO: Change to switch if supported
   if (this->speed == SPEED_STOPPED) {
@@ -133,11 +137,13 @@ void Navigator::update(Position p) {
   }
 
   // Now we should make adjustments to get to the waypoint we're aiming at
+  SPEED oldSpeed = this->speed;
+  STEERING oldSteering = this->steering;
   adjustSpeed(waypointVector.d);
   adjustSteering(p.r, waypointVector.r);
 
   // Output what we're doing if debug
-  if (LOG_NAVIGATION_DEBUG) {
+  if (LOG_NAVIGATION_DEBUG && (oldSpeed != speed || oldSteering != steering)) {
     Serial.print("waypointVector: dist=");
     Serial.print(waypointVector.d);
     Serial.print(",dir=");
@@ -162,10 +168,10 @@ void Navigator::setSpeed(SPEED s) {
     servoValue = SPEED_HIGH_SERVO;
   }
 
-  if (LOG_NAVIGATION_DEBUG) {
-    Serial.print("SPEED SERVO: ");
-    Serial.println(servoValue);
-  }
+  //if (LOG_NAVIGATION_DEBUG) {
+  //  Serial.print("SPEED SERVO: ");
+  //  Serial.println(servoValue);
+  //}
   this->speedServo.writeMicroseconds(servoValue);
   this->speed = s;
 }
@@ -194,10 +200,10 @@ void Navigator::setSteering(STEERING s) {
     servoValue = STEERING_RIGHT_SERVO;
   }
 
-  if (LOG_NAVIGATION_DEBUG) {
-    Serial.print("STEERING SERVO: ");
-    Serial.println(servoValue);
-  }
+  //if (LOG_NAVIGATION_DEBUG) {
+  //  Serial.print("STEERING SERVO: ");
+  //  Serial.println(servoValue);
+  //}
   this->steeringServo.writeMicroseconds(servoValue);
   this->steering = s;
 }
