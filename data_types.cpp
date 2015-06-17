@@ -1,9 +1,19 @@
 #include "Arduino.h"
 #include "data_types.h"
 
-void serialPrintWaypoint(char* prefix, int index, Waypoint w) {
-   Serial.print(prefix);
+void serialPrintLocation(char* prefix, Location l) {
+  Serial.print(prefix);
   Serial.print("(");
+  Serial.print(l.x);
+  Serial.print(",");
+  Serial.print(l.y);
+  Serial.println(")");
+}
+
+void serialPrintWaypoint(char* prefix, int index, Waypoint w) {
+  Serial.print(prefix);
+  Serial.print(index);
+  Serial.print(" -- (");
   Serial.print(w.x);
   Serial.print(",");
   Serial.print(w.y);
@@ -20,13 +30,11 @@ void serialPrintPosition(char* prefix, Position p) {
   Serial.println(p.r * 180.0 / PI);
 }
 
-void serialPrintLocation(char* prefix, Location l) {
+void serialPrintVector(char* prefix, Vector v) {
   Serial.print(prefix);
-  Serial.print("(");
-  Serial.print(l.x);
-  Serial.print(",");
-  Serial.print(l.y);
-  Serial.println(")");
+  Serial.print(v.d);
+  Serial.print("@");
+  Serial.println(v.r * 180.0 / PI);
 }
 
 Vector getVector(float x0, float y0, float x1, float y1) {

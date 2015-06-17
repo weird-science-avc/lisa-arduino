@@ -1,15 +1,15 @@
 #ifndef DataTypes_h
 #define DataTypes_h
 
+struct Location {
+  float x;
+  float y;
+};
+
 struct Waypoint {
   float x;
   float y;
   float tolerance;
-};
-
-struct Location {
-  float x;
-  float y;
 };
 
 struct Position {
@@ -23,9 +23,10 @@ struct Vector {
   float d;
 };
 
+void serialPrintLocation(char* prefix, Location l);
 void serialPrintWaypoint(char* prefix, int index, Waypoint w);
 void serialPrintPosition(char* prefix, Position p);
-void serialPrintLocation(char* prefix, Location l);
+void serialPrintVector(char* prefix, Vector v);
 
 // Returns a vector with magnitude and angle [0, 2PI]
 Vector getVector(float x0, float y0, float x1, float y1);

@@ -35,7 +35,7 @@ class Navigator
     float getTurnRadius();
 
     // Start navigation amongst waypoints
-    void start(Waypoint waypoints[]);
+    void start(Waypoint waypoints[], int waypointsLength);
     bool isRunning();
 
     // Tells the navigator to update its course, providing relavant external information as necessary
@@ -43,11 +43,12 @@ class Navigator
 
   private:
     int ledPin;
-    Waypoint waypoints[];
+    Waypoint* waypoints = 0;
+    int waypointsLength = 0;
     int waypointIndex = 0;
     bool running = false;
-    SPEED speed;
-    STEERING steering;
+    SPEED speed = SPEED_STOPPED;
+    STEERING steering = STEERING_CENTER;
     Servo speedServo, steeringServo;
 
     void adjustSpeed(float distance);

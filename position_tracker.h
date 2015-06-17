@@ -6,7 +6,7 @@
 class PositionTracker
 {
   public:
-    void reset();
+    Position reset();
     Position update(float distance, float turnRadius);
 
   private:
