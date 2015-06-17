@@ -6,6 +6,8 @@
 // Access global wheel encoder ticks
 extern volatile int gWheelEncoderTicks;
 
+const float WHEEL_ENCODER_M_DISTANCE_FROM_TICKS = 0.0544737;
+
 class PositionTracker
 {
   public:
