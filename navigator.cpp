@@ -107,6 +107,18 @@ void Navigator::update(Position p) {
       }
       setSpeed(SPEED_STOPPED);
       this->running = false;
+      // Blink lights 3 times to let people know we're done
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
+      delay(100);
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
+      delay(100);
+      digitalWrite(this->ledPin, HIGH);
+      delay(100);
+      digitalWrite(this->ledPin, LOW);
       return;
     }
 
