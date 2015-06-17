@@ -6,6 +6,7 @@
 // Access global wheel encoder ticks
 extern volatile int gWheelEncoderTicks;
 
+// TODO: Put the actual things measured in here and use to compute M so that it's documented
 const float WHEEL_ENCODER_M_DISTANCE_FROM_TICKS = 0.0544737;
 
 class PositionTracker

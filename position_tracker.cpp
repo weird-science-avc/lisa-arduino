@@ -17,7 +17,8 @@ Position PositionTracker::update(float distance, float turnRadius) {
   int wheelEncoderDelta = wheelEncoderTicks - lastWheelEncoderTicks;
   lastWheelEncoderTicks = wheelEncoderTicks;
 
-  // 1 tick = 0.0544737 meters
+  // Override distance since we have a better measurement from wheel encoder;
+  // TODO: When happy with wheel encoder, remove passed in distance
   distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
 
   // Figure out position deltas based on straight or banked travel
