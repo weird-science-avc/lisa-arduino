@@ -3,8 +3,9 @@
 
 Position PositionTracker::reset() {
   this->position = Position{0, 0, 0};
-  // TODO: Control with LOG_LEVEL system
-  //serialPrintPosition("POSITION(RESET): ", this->position);
+  if (LOG_POSITION_DEBUG) {
+    serialPrintlnPosition("POSITION(RESET): ", this->position);
+  }
   return this->position;
 }
 
@@ -47,9 +48,8 @@ Position PositionTracker::update(float distance, float turnRadius) {
     newPosition.r -= 2 * PI;
   }
   // TODO: Write equality overloads for Position
-  if (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r) {
-    // TODO: Control with LOG_LEVEL system
-    //serialPrintPosition("POSITION: ", newPosition);
+  if (LOG_POSITION_DEBUG && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
+    serialPrintlnPosition("POSITION: ", newPosition);
   }
   this->position = newPosition;
   return this->position;
