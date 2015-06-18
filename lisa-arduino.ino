@@ -50,7 +50,7 @@ Waypoint waypoints[] = {
   Waypoint{4.0, 6.0, 0.1},
   Waypoint{2.0, 6.0, 0.1},
   Waypoint{0.0, 4.0, 0.1},
-  Waypoint{0.0, 0.0, 0.1}
+  Waypoint{0.0, -3.0, 3.0} // To ensure we go past the finish but with a wide variance, set past, but allow big tolerance
 };
 int waypointsLength =  sizeof(waypoints) / sizeof(Waypoint);
 
