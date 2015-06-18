@@ -4,6 +4,7 @@
 Position PositionTracker::reset() {
   this->position = Position{0, 0, 0};
   this->lastWheelEncoderTicks = gWheelEncoderTicks;
+  this->lastYaw = gYaw;
   if (LOG_POSITION_DEBUG) {
     serialPrintlnPosition("POSITION(RESET): ", this->position);
     Serial.print("WHEEL ENCODER: ");
@@ -14,14 +15,24 @@ Position PositionTracker::reset() {
 
 // turnRadius of 0.0 or NAN means straight
 Position PositionTracker::update(float distance, float turnRadius) {
-  // Figure out wheel encoder delta and update stored value
+  // Figure out wheel encoder delta, update stored value and calculate distance
   int wheelEncoderTicks = gWheelEncoderTicks;
-  int wheelEncoderDelta = wheelEncoderTicks - lastWheelEncoderTicks;
+  int wheelEncoderDelta = wheelEncoderTicks - this->lastWheelEncoderTicks;
   lastWheelEncoderTicks = wheelEncoderTicks;
-
-  // Override distance since we have a better measurement from wheel encoder;
-  // TODO: When happy with wheel encoder, remove passed in distance
   distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
+
+  // Figure out IMU's latest orientation, updated stored value and calculate turnRadius
+  float yaw = gYaw;
+  if (yaw != this->lastYaw) {
+    //Serial.print("yaw: ");
+    //Serial.print(yaw);
+    //Serial.print(", lastYaw: ");
+    //Serial.println(this->lastYaw);
+    // IMU has right positive, so switch our math to make left positive again.
+    float yawDelta = this->lastYaw - yaw;
+    this->lastYaw = yaw;
+    turnRadius = distance / (yawDelta * PI / 180.0);
+  }
 
   // Figure out position deltas based on straight or banked travel
   float xDelta = 0.0;
@@ -61,6 +72,8 @@ Position PositionTracker::update(float distance, float turnRadius) {
   // TODO: Write equality overloads for Position
   if (LOG_POSITION_DEBUG && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
     serialPrintlnPosition("POSITION: ", newPosition);
+    Serial.print("WHEEL ENCODER: ");
+    Serial.println(this->lastWheelEncoderTicks);
   }
   this->position = newPosition;
   return this->position;

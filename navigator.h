@@ -27,7 +27,6 @@ enum STEERING {
 class Navigator
 {
   public:
-    Navigator(int ledPin);
     void attachSpeedServo(int pin);
     void attachSteeringServo(int pin);
 
@@ -35,20 +34,17 @@ class Navigator
     float getTurnRadius();
 
     // Start navigation amongst waypoints
-    void start(Waypoint waypoints[], int waypointsLength);
+    void start();
     bool isRunning();
+    void stop();
 
-    // Tells the navigator to update its course, providing relavant external information as necessary
-    void update(Position p);
+    // Tells the navigator to update its course given a position and target waypoint
+    void update(Position p, Waypoint w);
 
     SPEED getSpeed();
     STEERING getSteering();
 
   private:
-    int ledPin;
-    Waypoint* waypoints = 0;
-    int waypointsLength = 0;
-    int waypointIndex = 0;
     bool running = false;
     SPEED speed = SPEED_STOPPED;
     STEERING steering = STEERING_CENTER;
