@@ -58,9 +58,12 @@ Vector getVector(float x0, float y0, float x1, float y1) {
   float deltaX = x1 - x0;
   Vector v;
   v.d = sqrt(pow(deltaX, 2) + pow(deltaY, 2));
-  v.r = atan2(deltaY, deltaX);
-  if (v.r < 0) {
-    v.r += 2 * PI;
-  }
+  v.r = normalizeRadians(atan2(deltaY, deltaX));
   return v;
+}
+
+float normalizeRadians(float r) {
+  while (r > PI) { r -= 2 * PI; }
+  while (r < -PI) { r += 2 * PI; }
+  return r;
 }

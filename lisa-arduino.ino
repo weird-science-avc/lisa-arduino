@@ -9,8 +9,10 @@ const int BUTTON_PIN = 12;
 const int LED_PIN = 13;
 const int WHEEL_ENCODER_INT = 0; // pin 2
 
+// TODO: Move into a class
 const int MOCK_WHEEL_ENCODER_PIN = 8;
-const bool MOCK_IMU = true;
+const bool MOCK_IMU = false;
+void handleMocks();
 
 // Create helper objects
 PositionTracker tracker;
@@ -49,13 +51,13 @@ void setup() {
 }
 
 Waypoint waypoints[] = {
-  Waypoint{4.0, 0.0, 0.1},
-  Waypoint{6.0, 2.0, 0.1},
-  Waypoint{6.0, 4.0, 0.1},
-  Waypoint{4.0, 6.0, 0.1},
-  Waypoint{2.0, 6.0, 0.1},
-  Waypoint{0.0, 4.0, 0.1},
-  Waypoint{0.0, -3.0, 3.0} // To ensure we go past the finish but with a wide variance, set past, but allow big tolerance
+  Waypoint{15.0, 0.0, 0.1},
+  //Waypoint{6.0, 2.0, 0.1},
+  //Waypoint{6.0, 4.0, 0.1},
+  //Waypoint{4.0, 6.0, 0.1},
+  //Waypoint{2.0, 6.0, 0.1},
+  //Waypoint{0.0, 4.0, 0.1},
+  //Waypoint{0.0, -3.0, 3.0} // To ensure we go past the finish but with a wide variance, set past, but allow big tolerance
 };
 int waypointsLength =  sizeof(waypoints) / sizeof(Waypoint);
 int waypointIndex;
@@ -64,28 +66,57 @@ int waypointIndex;
 bool canPromoteWaypoint(Position p);
 bool haveArrivedWaypoint(Position p);
 
+long startTimestamp = 0;
 long lastPositionTimestamp = 0;
 long lastNavigationTimestamp = 0;
-long lastMockWheelEncoderTimestamp = 0;
 Position position;
 void loop() {
+  handleMocks();
+  
   // Always calculate new timestamp and delta so we can use in loop
-  long timestamp;
+  long timestamp = millis();
 
   // Do any operations that we need faster (like fast sensor polling) on each loop iteration
   bool buttonPush = digitalRead(BUTTON_PIN) == HIGH;
-
-  // Get current waypoint
-  Waypoint waypoint = waypoints[waypointIndex];
+  
+  // If we push the button while running, stop
+  if (navigator.isRunning() && (buttonPush || (timestamp - startTimestamp > 30000))) {
+    navigator.stop();
+    if (LOG_POSITION_DEBUG) { tracker.debugOff(); }
+    // Blink lights 3 times to let people know we're done
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(1000);
+    digitalWrite(LED_PIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_PIN, LOW);
+    delay(5000);
+    return;
+  }
 
   // Track position (every X ms always)
   timestamp = millis();
   long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
-  if (positionTimeElapsedMs > 10) {
+  if (positionTimeElapsedMs > 100) {
     lastPositionTimestamp = timestamp;
     position = tracker.update();
   }
-
+  
+  // Get current waypoint
+  Waypoint waypoint = waypoints[waypointIndex];
   // Check to see if we're at a waypoint or can promote if we're running
   if (navigator.isRunning()) {
     bool canPromote = canPromoteWaypoint(position);
@@ -119,6 +150,7 @@ void loop() {
 
       } else { // Finish
         navigator.stop();
+        if (LOG_POSITION_DEBUG) { tracker.debugOff(); }
         if (LOG_NAVIGATION_INFO) {
           // TODO: Calculate time to finish navigation
           Serial.println("**** END NAVIGATION ****");
@@ -144,7 +176,8 @@ void loop() {
     // Adjust navigation (every X ms)
     timestamp = millis();
     long navigationTimeElapsedMs = timestamp - lastNavigationTimestamp;
-    if (navigationTimeElapsedMs > 100) {
+    if (positionTimeElapsedMs > 100) {
+    //if (navigationTimeElapsedMs > 100) {
       lastNavigationTimestamp = timestamp;
       bool navigationChanged = navigator.update(position, waypoint);
       // If navigation has changed, force an update
@@ -153,30 +186,6 @@ void loop() {
         long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
         lastPositionTimestamp = timestamp;
         position = tracker.update();
-      }
-    }
-
-    // MOCK: toggle wheel encoder based on speed so we can mock without the care if we like
-    SPEED speed = navigator.getSpeed();
-    timestamp = millis();
-    long mockWheelEncoderElapsedMs = timestamp - lastMockWheelEncoderTimestamp;
-    if ((speed == SPEED_HIGH && mockWheelEncoderElapsedMs > SPEED_HIGH_VELOCITY / WHEEL_ENCODER_M_DISTANCE_FROM_TICKS) ||
-        (speed == SPEED_LOW && mockWheelEncoderElapsedMs > SPEED_LOW_VELOCITY / WHEEL_ENCODER_M_DISTANCE_FROM_TICKS)) {
-
-      lastMockWheelEncoderTimestamp = timestamp;
-      digitalWrite(MOCK_WHEEL_ENCODER_PIN, !digitalRead(MOCK_WHEEL_ENCODER_PIN));
-
-      // MOCK: update orientation based on some correlation to steering and speed so we can test
-      STEERING steering = navigator.getSteering();
-      //Serial.print("steering: ");
-      //Serial.println(steering == STEERING_LEFT ? "left" : steering == STEERING_RIGHT ? "right" : "center");
-      if (MOCK_IMU) {
-        // NOTE: IMU goes backwards, where positive is right, negative left, so adjust
-        if (steering == STEERING_LEFT) {
-          gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_LEFT_TURN_RADIUS) * 180.0 / PI;
-        } else if (steering == STEERING_RIGHT) {
-          gYaw = gYaw + (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_TURN_RADIUS) * 180.0 / PI;
-        }
       }
     }
 
@@ -190,10 +199,12 @@ void loop() {
       timestamp = millis();
       lastPositionTimestamp = timestamp;
       lastNavigationTimestamp = timestamp;
-      lastMockWheelEncoderTimestamp = timestamp;
-       Serial.print("*** STARTING NAVIGATION -- ");
+      Serial.print("*** STARTING NAVIGATION -- ");
       Serial.print(waypointsLength);
       Serial.println(" waypoints ***");
+      startTimestamp = timestamp;
+      waypointIndex = 0;
+      if (LOG_POSITION_DEBUG) { tracker.debugOn(); }
       navigator.start();
     }
   }
@@ -207,6 +218,34 @@ void serialEvent() {
     gYaw = Serial.parseFloat();
     char garbage[20];
     Serial.readBytesUntil('\0', garbage, 20);
+    //Serial.print("gYaw: ");
+    //Serial.println(gYaw);
+  }
+}
+
+long lastMockWheelEncoderTimestamp = 0;
+void handleMocks() {
+  long timestamp = millis();
+  
+  // MOCK: toggle wheel encoder based on speed so we can mock without the care if we like
+  SPEED speed = navigator.getSpeed();
+  long mockWheelEncoderElapsedMs = timestamp - lastMockWheelEncoderTimestamp;
+  if ((speed == SPEED_HIGH && mockWheelEncoderElapsedMs > SPEED_HIGH_VELOCITY / WHEEL_ENCODER_M_DISTANCE_FROM_TICKS) ||
+      (speed == SPEED_LOW && mockWheelEncoderElapsedMs > SPEED_LOW_VELOCITY / WHEEL_ENCODER_M_DISTANCE_FROM_TICKS)) {
+
+    lastMockWheelEncoderTimestamp = timestamp;
+    digitalWrite(MOCK_WHEEL_ENCODER_PIN, !digitalRead(MOCK_WHEEL_ENCODER_PIN));
+
+    // MOCK: update orientation based on some correlation to steering and speed so we can test
+    STEERING steering = navigator.getSteering();
+    if (MOCK_IMU) {
+      // NOTE: IMU goes backwards, where positive is right, negative left, so adjust
+      if (steering == STEERING_LEFT) {
+        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_LEFT_TURN_RADIUS) * 180.0 / PI;
+      } else if (steering == STEERING_RIGHT) {
+        gYaw = gYaw + (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_TURN_RADIUS) * 180.0 / PI;
+      }
+    }
   }
 }
 

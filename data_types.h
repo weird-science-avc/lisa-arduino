@@ -36,7 +36,9 @@ void serialPrintlnPosition(char* prefix, Position p);
 void serialPrintVector(char* prefix, Vector v);
 void serialPrintlnVector(char* prefix, Vector v);
 
-// Returns a vector with magnitude and angle [0, 2PI]
+// Returns a vector with magnitude and angle [-PI, PI]
 Vector getVector(float x0, float y0, float x1, float y1);
+// Moves the vector to [-PI, PI]
+float normalizeRadians(float r);
 
 #endif

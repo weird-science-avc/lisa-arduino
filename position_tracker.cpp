@@ -1,14 +1,22 @@
 #include "Arduino.h"
 #include "position_tracker.h"
 
+void PositionTracker::debugOn() {
+  this->debug = true;
+}
+
+void PositionTracker::debugOff() {
+  this->debug = false;
+}
+
 Position PositionTracker::reset() {
   this->position = Position{0, 0, 0};
   this->lastWheelEncoderTicks = gWheelEncoderTicks;
   this->lastYaw = gYaw;
-  if (LOG_POSITION_DEBUG) {
+  if (this->debug) {
     serialPrintlnPosition("POSITION(RESET): ", this->position);
-    Serial.print("WHEEL ENCODER: ");
-    Serial.println(this->lastWheelEncoderTicks);
+    //Serial.print("WHEEL ENCODER: ");
+    //Serial.println(this->lastWheelEncoderTicks);
   }
   return this->position;
 }
@@ -20,32 +28,27 @@ Position PositionTracker::update() {
   lastWheelEncoderTicks = wheelEncoderTicks;
   float distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
 
-  // Figure out IMU's latest orientation, updated stored value and calculate turnRadius
-  float turnRadius = NAN; // Means straight
-  float yaw = gYaw;
-  if (yaw != this->lastYaw) {
-    //Serial.print("yaw: ");
-    //Serial.print(yaw);
-    //Serial.print(", lastYaw: ");
-    //Serial.println(this->lastYaw);
-    // IMU has right positive, so switch our math to make left positive again.
-    float yawDelta = this->lastYaw - yaw;
-    this->lastYaw = yaw;
-    turnRadius = distance / (yawDelta * PI / 180.0);
+  // Figure out IMU's latest orientation, figure out rDelta, and updated stored value
+  float rDelta = 0.0;
+  // IMU has right positive, so switch our math to make left positive again.
+  float yawDelta = this->lastYaw - gYaw;
+  // NOTE: Sometimes the IMU spikes changes so limit the size we believe
+  if (abs(yawDelta) > 0.0 && abs(yawDelta) < 5.0) {
+    rDelta = normalizeRadians(yawDelta * PI / 180.0);
+    this->lastYaw = gYaw;
   }
 
   // Figure out position deltas based on straight or banked travel
   float xDelta = 0.0;
   float yDelta = 0.0;
-  float rDelta = 0.0;
-  if (isnan(turnRadius) || turnRadius == 0.0) {
+  if (rDelta == 0.0) {
     //Serial.println("Straight motion");
     xDelta = distance * cos(this->position.r);
     yDelta = distance * sin(this->position.r);
   } else {
     //Serial.println("Banked motion");
-    // Get the rDelta
-    rDelta = distance / turnRadius;
+    // Get the turn radius from the distance and angle change
+    float turnRadius = distance / rDelta;
     // Calculate x and y deltas as if we were at (0,0) pointed along x-axis
     // NOTE: x is 'up' for us, so that's governed by Sin
     float xDeltaOrigin = turnRadius * sin(rDelta);
@@ -62,15 +65,9 @@ Position PositionTracker::update() {
   Position newPosition;
   newPosition.x = this->position.x + xDelta;
   newPosition.y = this->position.y + yDelta;
-  newPosition.r = this->position.r + rDelta;
-  // Keep orientation from [0,2PI]
-  if (position.r < 0) {
-    newPosition.r += 2 * PI;
-  } else if (position.r > 2 * PI) {
-    newPosition.r -= 2 * PI;
-  }
+  newPosition.r = normalizeRadians(this->position.r + rDelta);
   // TODO: Write equality overloads for Position
-  if (LOG_POSITION_DEBUG && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
+  if (this->debug && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
     serialPrintlnPosition("POSITION: ", newPosition);
     Serial.print("WHEEL ENCODER: ");
     Serial.println(this->lastWheelEncoderTicks);

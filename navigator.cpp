@@ -81,8 +81,8 @@ void Navigator::setSpeed(SPEED s) {
 
 void Navigator::adjustSteering(float orientation, float targetOrientation) {
   float delta = targetOrientation - orientation;
-  // Get smallest delta by reducing/increasing outside [-pi,pi] by 2pi
-  delta += (delta > PI) ? -2 * PI : (delta < -PI) ? 2 * PI : 0;
+  // Get delta between [-pi,pi]
+  delta = normalizeRadians(delta);
   STEERING newSteering;
   if (abs(delta) < ORIENTATION_DELTA) {
     newSteering = STEERING_CENTER;
