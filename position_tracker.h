@@ -1,6 +1,7 @@
 #ifndef PositionTracker_h
 #define PositionTracker_h
 
+#include "Arduino.h"
 #include "data_types.h"
 
 // Access global wheel encoder ticks
@@ -15,14 +16,13 @@ const float WHEEL_ENCODER_M_DISTANCE_FROM_TICKS = 0.0544737;
 class PositionTracker
 {
   public:
-    void debugOn();
-    void debugOff();
-    
+    PositionTracker(int logLevel);
+
     Position reset();
     Position update();
 
   private:
-    bool debug = false;
+    int logLevel = 0;
     Position position;
     int lastWheelEncoderTicks = 0;
     float lastYaw = 0.0;

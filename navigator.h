@@ -27,13 +27,14 @@ enum STEERING {
 class Navigator
 {
   public:
+    Navigator(int logLevel);
+
     void attachSpeedServo(int pin);
     void attachSteeringServo(int pin);
-    
+
     // Start navigation amongst waypoints
-    void start();
-    bool isRunning();
-    void stop();
+    void reset();
+    void fullStop();
 
     // Tells the navigator to update its course given a position and target waypoint
     bool update(Position p, Waypoint w);
@@ -42,7 +43,8 @@ class Navigator
     STEERING getSteering();
 
   private:
-    bool running = false;
+    int logLevel = 0;
+
     SPEED speed = SPEED_STOPPED;
     STEERING steering = STEERING_CENTER;
     Servo speedServo, steeringServo;

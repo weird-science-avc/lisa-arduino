@@ -1,22 +1,15 @@
-#include "Arduino.h"
 #include "position_tracker.h"
 
-void PositionTracker::debugOn() {
-  this->debug = true;
-}
-
-void PositionTracker::debugOff() {
-  this->debug = false;
+PositionTracker::PositionTracker(int logLevel) {
+  this->logLevel = logLevel;
 }
 
 Position PositionTracker::reset() {
   this->position = Position{0, 0, 0};
   this->lastWheelEncoderTicks = gWheelEncoderTicks;
   this->lastYaw = gYaw;
-  if (this->debug) {
+  if (this->logLevel >= LOG_LEVEL_DEBUG) {
     serialPrintlnPosition("POSITION(RESET): ", this->position);
-    //Serial.print("WHEEL ENCODER: ");
-    //Serial.println(this->lastWheelEncoderTicks);
   }
   return this->position;
 }
@@ -67,7 +60,7 @@ Position PositionTracker::update() {
   newPosition.y = this->position.y + yDelta;
   newPosition.r = normalizeRadians(this->position.r + rDelta);
   // TODO: Write equality overloads for Position
-  if (this->debug && (newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
+  if (this->logLevel >= LOG_LEVEL_DEBUG && (this->logLevel >= LOG_LEVEL_VERBOSE || newPosition.x != position.x || newPosition.y != this->position.y || newPosition.r != this->position.r)) {
     serialPrintlnPosition("POSITION: ", newPosition);
     Serial.print("WHEEL ENCODER: ");
     Serial.println(this->lastWheelEncoderTicks);

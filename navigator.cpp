@@ -1,5 +1,9 @@
 #include "navigator.h"
 
+Navigator::Navigator(int logLevel) {
+  this->logLevel = logLevel;
+}
+
 void Navigator::attachSpeedServo(int pin) {
   this->speedServo.attach(pin);
   // Initialize motor
@@ -19,17 +23,11 @@ STEERING Navigator::getSteering() {
   return this->steering;
 }
 
-void Navigator::start() {
-  this->running = true;
+void Navigator::reset() {
 }
 
-bool Navigator::isRunning() {
-  return this->running;
-}
-
-void Navigator::stop() {
+void Navigator::fullStop() {
   setSpeed(SPEED_STOPPED);
-  this->running = false;
 }
 
 bool Navigator::update(Position p, Waypoint w) {
@@ -42,8 +40,8 @@ bool Navigator::update(Position p, Waypoint w) {
   adjustSteering(p.r, v.r);
 
   // Output what we're doing if debug
-  if (oldSpeed != speed || oldSteering != steering) {
-    if (LOG_NAVIGATION_DEBUG) {
+  if (this->logLevel >= LOG_LEVEL_VERBOSE || oldSpeed != speed || oldSteering != steering) {
+    if (this->logLevel >= LOG_LEVEL_DEBUG) {
       Serial.print("NAVIGATION: dist=");
       Serial.print(v.d);
       Serial.print(",dir=");
@@ -60,6 +58,7 @@ bool Navigator::update(Position p, Waypoint w) {
 
 void Navigator::adjustSpeed(float distance) {
   SPEED newSpeed = (distance > APPROACH_DELTA) ? SPEED_HIGH : SPEED_LOW;
+  newSpeed = SPEED_HIGH;
   setSpeed(newSpeed);
 }
 

@@ -53,6 +53,19 @@ void serialPrintlnVector(char* prefix, Vector v) {
   Serial.println();
 }
 
+void blink(int pin, int count, int onMs, int offMs) {
+  int i = 0;
+  while (i < count) {
+    digitalWrite(pin, HIGH);
+    delay(onMs);
+    digitalWrite(pin, LOW);
+    i++;
+    if (i < count) {
+      delay(offMs);
+    }
+  }
+}
+
 Vector getVector(float x0, float y0, float x1, float y1) {
   float deltaY = y1 - y0;
   float deltaX = x1 - x0;
@@ -63,7 +76,11 @@ Vector getVector(float x0, float y0, float x1, float y1) {
 }
 
 float normalizeRadians(float r) {
-  while (r > PI) { r -= 2 * PI; }
-  while (r < -PI) { r += 2 * PI; }
+  while (r > PI) {
+    r -= 2 * PI;
+  }
+  while (r < -PI) {
+    r += 2 * PI;
+  }
   return r;
 }

@@ -1,5 +1,6 @@
 #include <Servo.h>
 #include "position_tracker.h"
+#include "waypoint_manager.h"
 #include "navigator.h"
 
 // PIN ASSIGNMENTS
@@ -11,14 +12,16 @@ const int WHEEL_ENCODER_INT = 0; // pin 2
 
 // TODO: Move into a class
 const int MOCK_WHEEL_ENCODER_PIN = 8;
-const bool MOCK_IMU = false;
-void handleMocks();
+const bool MOCK_IMU = true;
+void handleMockSensors();
 
 // Create helper objects
-PositionTracker tracker;
-Navigator navigator;
+PositionTracker tracker(LOG_LEVEL_INFO);
+WaypointManager manager(LOG_LEVEL_INFO);
+Navigator navigator(LOG_LEVEL_INFO);
+int logLevel = LOG_LEVEL_INFO;
 
-// Global tick counter for wheel encoder
+// Global values for wheel encoder and IMU
 volatile int gWheelEncoderTicks = 0;
 volatile float gPitch = 0.0;
 volatile float gRoll = 0.0;
@@ -45,172 +48,72 @@ void setup() {
 
   // PositionTracker initialization
 
+  // WaypointManager initialization
+  Waypoint waypoints[] = {
+    Waypoint{4.0, 0.0, 0.1},
+    Waypoint{6.0, 2.0, 0.1},
+    Waypoint{6.0, 4.0, 0.1},
+    Waypoint{4.0, 6.0, 0.1},
+    Waypoint{2.0, 6.0, 0.1},
+    Waypoint{0.0, 4.0, 0.1},
+    Waypoint{0.0, -3.0, 3.0}
+  };
+  manager.setWaypoints(waypoints, sizeof(waypoints) / sizeof(Waypoint));
+
   // Navigator initialization
   navigator.attachSpeedServo(SPEED_SERVO_PIN);
   navigator.attachSteeringServo(STEERING_SERVO_PIN);
 }
 
-Waypoint waypoints[] = {
-  Waypoint{15.0, 0.0, 0.1},
-  //Waypoint{6.0, 2.0, 0.1},
-  //Waypoint{6.0, 4.0, 0.1},
-  //Waypoint{4.0, 6.0, 0.1},
-  //Waypoint{2.0, 6.0, 0.1},
-  //Waypoint{0.0, 4.0, 0.1},
-  //Waypoint{0.0, -3.0, 3.0} // To ensure we go past the finish but with a wide variance, set past, but allow big tolerance
-};
-int waypointsLength =  sizeof(waypoints) / sizeof(Waypoint);
-int waypointIndex;
+const long EMERGENCY_TIMEOUT_MS = 30000;
+const long UPDATE_FREQUENCY_MS = 100;
 
-// TODO: Move out into class
-bool canPromoteWaypoint(Position p);
-bool haveArrivedWaypoint(Position p);
-
-long startTimestamp = 0;
-long lastPositionTimestamp = 0;
-long lastNavigationTimestamp = 0;
-Position position;
+bool started = false;
+long startedTimestamp = 0;
+long lastUpdatedTimestamp = 0;
 void loop() {
-  handleMocks();
-  
-  // Always calculate new timestamp and delta so we can use in loop
-  long timestamp = millis();
+  // Always handle mock sensors
+  handleMockSensors();
 
-  // Do any operations that we need faster (like fast sensor polling) on each loop iteration
-  bool buttonPush = digitalRead(BUTTON_PIN) == HIGH;
-  
-  // If we push the button while running, stop
-  if (navigator.isRunning() && (buttonPush || (timestamp - startTimestamp > 30000))) {
-    navigator.stop();
-    if (LOG_POSITION_DEBUG) { tracker.debugOff(); }
-    // Blink lights 3 times to let people know we're done
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(1000);
-    digitalWrite(LED_PIN, HIGH);
-    delay(1000);
-    digitalWrite(LED_PIN, LOW);
-    delay(5000);
+  // If we've travelled longer than our cutoff that means emergency stop
+  if (started && (millis() - startedTimestamp > EMERGENCY_TIMEOUT_MS)) {
+    emergencyStop();
     return;
   }
 
-  // Track position (every X ms always)
-  timestamp = millis();
-  long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
-  if (positionTimeElapsedMs > 100) {
-    lastPositionTimestamp = timestamp;
-    position = tracker.update();
-  }
-  
-  // Get current waypoint
-  Waypoint waypoint = waypoints[waypointIndex];
-  // Check to see if we're at a waypoint or can promote if we're running
-  if (navigator.isRunning()) {
-    bool canPromote = canPromoteWaypoint(position);
-    bool haveArrived = haveArrivedWaypoint(position);
-    if (canPromote || haveArrived) {
-      // Print arrival info
-      if (LOG_NAVIGATION_INFO) {
-        // TODO: Calculate time to finish waypoint
-        Serial.print("FINISH WAYPOINT");
-        if (canPromote && !haveArrived) {
-          Serial.print("(PROMOTION)");
-        }
-        serialPrintWaypoint(": ", waypointIndex, waypoint);
-        serialPrintPosition(" (position:", position);
-        Serial.println(")");
-      }
-
-      // Try to move to next waypoint an
-      waypointIndex++;
-      if (waypointIndex < waypointsLength) {
-        waypoint = waypoints[waypointIndex];
-        if (LOG_NAVIGATION_INFO) {
-          Serial.print("START WAYPOINT");
-          if (canPromote && !haveArrived) {
-            Serial.print("(PROMOTION)");
-          }
-          serialPrintWaypoint(": ", waypointIndex, waypoint);
-          serialPrintPosition(" (position:", position);
-          Serial.println(")");
-        }
-
-      } else { // Finish
-        navigator.stop();
-        if (LOG_POSITION_DEBUG) { tracker.debugOff(); }
-        if (LOG_NAVIGATION_INFO) {
-          // TODO: Calculate time to finish navigation
-          Serial.println("**** END NAVIGATION ****");
-        }
-        // Blink lights 3 times to let people know we're done
-        digitalWrite(LED_PIN, HIGH);
-        delay(100);
-        digitalWrite(LED_PIN, LOW);
-        delay(100);
-        digitalWrite(LED_PIN, HIGH);
-        delay(100);
-        digitalWrite(LED_PIN, LOW);
-        delay(100);
-        digitalWrite(LED_PIN, HIGH);
-        delay(100);
-        digitalWrite(LED_PIN, LOW);
-      }
+  // Next deal with button pushes (action then immediate exit)
+  if (digitalRead(BUTTON_PIN) == HIGH) {
+    if (started) {
+      emergencyStop();
     }
+    else {
+      start();
+    }
+    return;
   }
 
-  // If we're navigating, update navigation at a certain frequency with current position
-  if (navigator.isRunning()) {
-    // Adjust navigation (every X ms)
-    timestamp = millis();
-    long navigationTimeElapsedMs = timestamp - lastNavigationTimestamp;
-    if (positionTimeElapsedMs > 100) {
-    //if (navigationTimeElapsedMs > 100) {
-      lastNavigationTimestamp = timestamp;
-      bool navigationChanged = navigator.update(position, waypoint);
-      // If navigation has changed, force an update
-      if (navigationChanged) {
-        timestamp = millis();
-        long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
-        lastPositionTimestamp = timestamp;
-        position = tracker.update();
-      }
-    }
+  // If not started, nothing else is necessary to do
+  if (!started) {
+    return;
+  };
 
-  } else {
-    // Otherwise potenially start running if button is pushed
-    if (buttonPush) {
-      digitalWrite(LED_PIN, HIGH);
-      delay(3000);
-      digitalWrite(LED_PIN, LOW);
-      position = tracker.reset();
-      timestamp = millis();
-      lastPositionTimestamp = timestamp;
-      lastNavigationTimestamp = timestamp;
-      Serial.print("*** STARTING NAVIGATION -- ");
-      Serial.print(waypointsLength);
-      Serial.println(" waypoints ***");
-      startTimestamp = timestamp;
-      waypointIndex = 0;
-      if (LOG_POSITION_DEBUG) { tracker.debugOn(); }
-      navigator.start();
+  // We are started, update every so often
+  long timestamp = millis();
+  if (millis() - lastUpdatedTimestamp > UPDATE_FREQUENCY_MS) {
+    // Update position, waypoint, check done, and navigation
+    Position position = tracker.update();
+    Waypoint* waypoint = manager.getWaypoint(position);
+    if (waypoint == NULL) {
+      stop();
+    } else {
+      navigator.update(position, *waypoint);
+      lastUpdatedTimestamp = millis();
     }
   }
 }
 
 // If IMU data available read it
+// TODO: Consider moving this to PositionTracker and just have it read and wait for data
 void serialEvent() {
   if (!MOCK_IMU) {
     gRoll = Serial.parseFloat();
@@ -223,10 +126,54 @@ void serialEvent() {
   }
 }
 
-long lastMockWheelEncoderTimestamp = 0;
-void handleMocks() {
+void start() {
+  // Give 3s LED to warn about starting
+  blink(LED_PIN, 1, 3000, 0);
+  if (logLevel >= LOG_LEVEL_INFO) {
+    Serial.print("*** STARTING NAVIGATION -- ");
+    Serial.print(manager.length());
+    Serial.println(" waypoints ***");
+  }
   long timestamp = millis();
-  
+  startedTimestamp = timestamp;
+  lastUpdatedTimestamp = timestamp;
+  tracker.reset();
+  manager.reset();
+  navigator.reset();
+  started = true;
+}
+
+void stop() {
+  navigator.fullStop();
+  started = false;
+  if (logLevel >= LOG_LEVEL_INFO) {
+    // TODO: Calculate time to finish navigation
+    long duration = millis() - startedTimestamp;
+    Serial.print("**** END NAVIGATION -- ");
+    Serial.print(float(duration) / 1000.0);
+    Serial.println("s ****");
+  }
+  blink(LED_PIN, 3, 100, 100);
+}
+
+void emergencyStop() {
+  navigator.fullStop();
+  started = false;
+
+  if (logLevel >= LOG_LEVEL_INFO) {
+    // TODO: Calculate time to finish navigation
+    long duration = millis() - startedTimestamp;
+    Serial.print("**** END NAVIGATION (EMERGECY) -- ");
+    Serial.print(float(duration) / 1000.0);
+    Serial.println("s ****");
+  }
+  blink(LED_PIN, 5, 1000, 1000);
+}
+
+long lastMockWheelEncoderTimestamp = 0;
+void handleMockSensors() {
+  long timestamp = millis();
+
   // MOCK: toggle wheel encoder based on speed so we can mock without the care if we like
   SPEED speed = navigator.getSpeed();
   long mockWheelEncoderElapsedMs = timestamp - lastMockWheelEncoderTimestamp;
@@ -245,28 +192,8 @@ void handleMocks() {
       } else if (steering == STEERING_RIGHT) {
         gYaw = gYaw + (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_TURN_RADIUS) * 180.0 / PI;
       }
+      while (gYaw > 180.0) { gYaw -= 360.0; }
+      while (gYaw < -180.0) { gYaw += 360.0; }
     }
   }
 }
-
-// TODO: Move out to class
-bool canPromoteWaypoint(Position p) {
-  // If there's a next waypoint, think about promoting it
-  if (waypointIndex + 1 < waypointsLength) {
-    Waypoint waypoint = waypoints[waypointIndex];
-    Waypoint nextWaypoint = waypoints[waypointIndex + 1];
-    Vector nextWaypointVector = getVector(p.x, p.y, nextWaypoint.x, nextWaypoint.y);
-    Vector waypointToWaypointVector = getVector(waypoint.x, waypoint.y, nextWaypoint.x, nextWaypoint.y);
-    // If the distance to our next waypoint is less than the distance between them, we've passed by so promote
-    // TODO: Phil suggested we could actual remove current waypoint's tolerance from our distance to next as well and it'd be okay
-    return nextWaypointVector.d < waypointToWaypointVector.d;
-  }
-  return false;
-}
-
-bool haveArrivedWaypoint(Position p) {
-  Waypoint w = waypoints[waypointIndex];
-  Vector v = getVector(p.x, p.y, w.x, w.y);
-  return v.d < w.tolerance;
-}
-

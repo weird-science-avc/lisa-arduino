@@ -1,9 +1,11 @@
 #ifndef DataTypes_h
 #define DataTypes_h
 
-const bool LOG_POSITION_DEBUG = false;
-const bool LOG_NAVIGATION_DEBUG = false;
-const bool LOG_NAVIGATION_INFO = false;
+const int LOG_LEVEL_SILENT = 1;
+const int LOG_LEVEL_WARN = 1;
+const int LOG_LEVEL_INFO = 2;
+const int LOG_LEVEL_DEBUG = 3;
+const int LOG_LEVEL_VERBOSE = 4;
 
 struct Location {
   float x;
@@ -36,8 +38,11 @@ void serialPrintlnPosition(char* prefix, Position p);
 void serialPrintVector(char* prefix, Vector v);
 void serialPrintlnVector(char* prefix, Vector v);
 
+void blink(int pin, int count, int onMs, int offMs);
+
 // Returns a vector with magnitude and angle [-PI, PI]
 Vector getVector(float x0, float y0, float x1, float y1);
+
 // Moves the vector to [-PI, PI]
 float normalizeRadians(float r);
 
