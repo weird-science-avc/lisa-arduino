@@ -29,17 +29,14 @@ class Navigator
   public:
     void attachSpeedServo(int pin);
     void attachSteeringServo(int pin);
-
-    float getVelocity();
-    float getTurnRadius();
-
+    
     // Start navigation amongst waypoints
     void start();
     bool isRunning();
     void stop();
 
     // Tells the navigator to update its course given a position and target waypoint
-    void update(Position p, Waypoint w);
+    bool update(Position p, Waypoint w);
 
     SPEED getSpeed();
     STEERING getSteering();

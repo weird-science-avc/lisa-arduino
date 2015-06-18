@@ -19,28 +19,6 @@ STEERING Navigator::getSteering() {
   return this->steering;
 }
 
-float Navigator::getVelocity() {
-  // TODO: Change to switch if supported
-  if (this->speed == SPEED_STOPPED) {
-    return 0.0;
-  } else if (this->speed == SPEED_LOW) {
-    return SPEED_LOW_VELOCITY;
-  } else { // SPEED_HIGH
-    return SPEED_HIGH_VELOCITY;
-  }
-}
-
-float Navigator::getTurnRadius() {
-  // TODO: Change to switch if supported
-  if (this->steering == STEERING_CENTER) {
-    return NAN;
-  } else if (this->steering == STEERING_LEFT) {
-    return STEERING_LEFT_TURN_RADIUS;
-  } else { // STEERING_RIGHT
-    return STEERING_RIGHT_TURN_RADIUS;
-  }
-}
-
 void Navigator::start() {
   this->running = true;
 }
@@ -54,7 +32,7 @@ void Navigator::stop() {
   this->running = false;
 }
 
-void Navigator::update(Position p, Waypoint w) {
+bool Navigator::update(Position p, Waypoint w) {
   Vector v = getVector(p.x, p.y, w.x, w.y);
 
   // Now we should make adjustments to get to the waypoint we're aiming at
@@ -64,16 +42,20 @@ void Navigator::update(Position p, Waypoint w) {
   adjustSteering(p.r, v.r);
 
   // Output what we're doing if debug
-  if (LOG_NAVIGATION_DEBUG && (oldSpeed != speed || oldSteering != steering)) {
-    Serial.print("NAVIGATION: dist=");
-    Serial.print(v.d);
-    Serial.print(",dir=");
-    Serial.print(v.r * 180.0 / PI);
-    Serial.print(", SPEED: ");
-    Serial.print(this->speed == SPEED_STOPPED ? "stopped" : this->speed == SPEED_LOW ? "low" : "high");
-    Serial.print(", STEERING: ");
-    Serial.println(this->steering == STEERING_LEFT ? "left" : this->steering == STEERING_CENTER ? "center" : "right");
+  if (oldSpeed != speed || oldSteering != steering) {
+    if (LOG_NAVIGATION_DEBUG) {
+      Serial.print("NAVIGATION: dist=");
+      Serial.print(v.d);
+      Serial.print(",dir=");
+      Serial.print(v.r * 180.0 / PI);
+      Serial.print(", SPEED: ");
+      Serial.print(this->speed == SPEED_STOPPED ? "stopped" : this->speed == SPEED_LOW ? "low" : "high");
+      Serial.print(", STEERING: ");
+      Serial.println(this->steering == STEERING_LEFT ? "left" : this->steering == STEERING_CENTER ? "center" : "right");
+    }
+    return true;
   }
+  return false;
 }
 
 void Navigator::adjustSpeed(float distance) {

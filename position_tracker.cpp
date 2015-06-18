@@ -13,15 +13,15 @@ Position PositionTracker::reset() {
   return this->position;
 }
 
-// turnRadius of 0.0 or NAN means straight
-Position PositionTracker::update(float distance, float turnRadius) {
+Position PositionTracker::update() {
   // Figure out wheel encoder delta, update stored value and calculate distance
   int wheelEncoderTicks = gWheelEncoderTicks;
   int wheelEncoderDelta = wheelEncoderTicks - this->lastWheelEncoderTicks;
   lastWheelEncoderTicks = wheelEncoderTicks;
-  distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
+  float distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
 
   // Figure out IMU's latest orientation, updated stored value and calculate turnRadius
+  float turnRadius = NAN; // Means straight
   float yaw = gYaw;
   if (yaw != this->lastYaw) {
     //Serial.print("yaw: ");

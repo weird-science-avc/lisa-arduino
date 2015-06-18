@@ -81,21 +81,34 @@ void loop() {
   // Track position (every X ms always)
   timestamp = millis();
   long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
-  float velocity = navigator.getVelocity();
-  float turnRadius = navigator.getTurnRadius();
   if (positionTimeElapsedMs > 10) {
     lastPositionTimestamp = timestamp;
-    position = tracker.update(velocity * float(positionTimeElapsedMs) / 1000.0, turnRadius);
+    position = tracker.update();
+  }
 
-    // Check to see if we're at a waypoint or can promote if we're running
-    if (navigator.isRunning()) {
-      bool canPromote = canPromoteWaypoint(position);
-      bool haveArrived = haveArrivedWaypoint(position);
-      if (canPromote || haveArrived) {
-        // Print arrival info
+  // Check to see if we're at a waypoint or can promote if we're running
+  if (navigator.isRunning()) {
+    bool canPromote = canPromoteWaypoint(position);
+    bool haveArrived = haveArrivedWaypoint(position);
+    if (canPromote || haveArrived) {
+      // Print arrival info
+      if (LOG_NAVIGATION_INFO) {
+        // TODO: Calculate time to finish waypoint
+        Serial.print("FINISH WAYPOINT");
+        if (canPromote && !haveArrived) {
+          Serial.print("(PROMOTION)");
+        }
+        serialPrintWaypoint(": ", waypointIndex, waypoint);
+        serialPrintPosition(" (position:", position);
+        Serial.println(")");
+      }
+
+      // Try to move to next waypoint an
+      waypointIndex++;
+      if (waypointIndex < waypointsLength) {
+        waypoint = waypoints[waypointIndex];
         if (LOG_NAVIGATION_INFO) {
-          // TODO: Calculate time to finish waypoint
-          Serial.print("FINISH WAYPOINT");
+          Serial.print("START WAYPOINT");
           if (canPromote && !haveArrived) {
             Serial.print("(PROMOTION)");
           }
@@ -104,39 +117,24 @@ void loop() {
           Serial.println(")");
         }
 
-        // Try to move to next waypoint an
-        waypointIndex++;
-        if (waypointIndex < waypointsLength) {
-          waypoint = waypoints[waypointIndex];
-          if (LOG_NAVIGATION_INFO) {
-            Serial.print("START WAYPOINT");
-            if (canPromote && !haveArrived) {
-              Serial.print("(PROMOTION)");
-            }
-            serialPrintWaypoint(": ", waypointIndex, waypoint);
-            serialPrintPosition(" (position:", position);
-            Serial.println(")");
-          }
-
-        } else { // Finish
-          navigator.stop();
-          if (LOG_NAVIGATION_INFO) {
-            // TODO: Calculate time to finish navigation
-            Serial.println("**** END NAVIGATION ****");
-          }
-          // Blink lights 3 times to let people know we're done
-          digitalWrite(LED_PIN, HIGH);
-          delay(100);
-          digitalWrite(LED_PIN, LOW);
-          delay(100);
-          digitalWrite(LED_PIN, HIGH);
-          delay(100);
-          digitalWrite(LED_PIN, LOW);
-          delay(100);
-          digitalWrite(LED_PIN, HIGH);
-          delay(100);
-          digitalWrite(LED_PIN, LOW);
+      } else { // Finish
+        navigator.stop();
+        if (LOG_NAVIGATION_INFO) {
+          // TODO: Calculate time to finish navigation
+          Serial.println("**** END NAVIGATION ****");
         }
+        // Blink lights 3 times to let people know we're done
+        digitalWrite(LED_PIN, HIGH);
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
+        delay(100);
+        digitalWrite(LED_PIN, HIGH);
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
+        delay(100);
+        digitalWrite(LED_PIN, HIGH);
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
       }
     }
   }
@@ -148,15 +146,13 @@ void loop() {
     long navigationTimeElapsedMs = timestamp - lastNavigationTimestamp;
     if (navigationTimeElapsedMs > 100) {
       lastNavigationTimestamp = timestamp;
-      navigator.update(position, waypoint);
-      // If velocity and/or turnRadius changed, force a position update
-      float newVelocity = navigator.getVelocity();
-      float newTurnRadius = navigator.getTurnRadius();
-      if (newVelocity != velocity || newTurnRadius != turnRadius) {
+      bool navigationChanged = navigator.update(position, waypoint);
+      // If navigation has changed, force an update
+      if (navigationChanged) {
         timestamp = millis();
         long positionTimeElapsedMs = timestamp - lastPositionTimestamp;
         lastPositionTimestamp = timestamp;
-        position = tracker.update(velocity * float(positionTimeElapsedMs) / 1000.0, turnRadius);
+        position = tracker.update();
       }
     }
 
