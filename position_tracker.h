@@ -10,6 +10,8 @@ extern volatile float gPitch;
 extern volatile float gRoll;
 extern volatile float gYaw;
 
+const float IMU_MAX_DELTA_RADIANS = 5.0 * PI / 180.0;
+
 // TODO: Put the actual things measured in here and use to compute M so that it's documented
 const float WHEEL_ENCODER_M_DISTANCE_FROM_TICKS = 0.0544737;
 

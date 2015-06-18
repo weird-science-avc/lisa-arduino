@@ -15,21 +15,22 @@ Position PositionTracker::reset() {
 }
 
 Position PositionTracker::update() {
+  // Figure out IMU's latest orientation, figure out rDelta, and updated stored value
+  // NOTE: IMU has right positive, so do last - now instead of more normal now - last to make left positive again.
+  float rDelta = normalizeRadians((this->lastYaw - gYaw) * PI / 180.0);
+  // NOTE: Sometimes the IMU spikes changes so limit the size we believe
+  if (abs(rDelta) > IMU_MAX_DELTA_RADIANS) {
+    // Skip this position update and get next time
+    return this->position;
+  }
+  // Successful read, store as last read
+  this->lastYaw = gYaw;
+
   // Figure out wheel encoder delta, update stored value and calculate distance
   int wheelEncoderTicks = gWheelEncoderTicks;
   int wheelEncoderDelta = wheelEncoderTicks - this->lastWheelEncoderTicks;
   lastWheelEncoderTicks = wheelEncoderTicks;
   float distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
-
-  // Figure out IMU's latest orientation, figure out rDelta, and updated stored value
-  float rDelta = 0.0;
-  // IMU has right positive, so switch our math to make left positive again.
-  float yawDelta = this->lastYaw - gYaw;
-  // NOTE: Sometimes the IMU spikes changes so limit the size we believe
-  if (abs(yawDelta) > 0.0 && abs(yawDelta) < 5.0) {
-    rDelta = normalizeRadians(yawDelta * PI / 180.0);
-    this->lastYaw = gYaw;
-  }
 
   // Figure out position deltas based on straight or banked travel
   float xDelta = 0.0;
