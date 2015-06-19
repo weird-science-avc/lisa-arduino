@@ -50,7 +50,11 @@ bool Navigator::update(Position p, Waypoint w) {
       Serial.print(", SPEED: ");
       Serial.print(this->speed == SPEED_STOPPED ? "stopped" : this->speed == SPEED_LOW ? "low" : "high");
       Serial.print(", STEERING: ");
-      Serial.println(this->steering == STEERING_LEFT ? "left" : this->steering == STEERING_CENTER ? "center" : "right");
+      Serial.println(this->steering == STEERING_LEFT_FULL ? "left-full" :
+        this->steering == STEERING_LEFT_HALF ? "left-half" :
+        this->steering == STEERING_CENTER ? "center" :
+        this->steering == STEERING_RIGHT_HALF ? "right-half" : "right-full"
+      );
     }
     return true;
   }
@@ -86,10 +90,14 @@ void Navigator::adjustSteering(float orientation, float targetOrientation) {
   STEERING newSteering;
   if (abs(delta) < ORIENTATION_DELTA) {
     newSteering = STEERING_CENTER;
-  } else if (delta < 0) {
-    newSteering = STEERING_RIGHT;
+  } else if (delta < -25.0 * PI / 180.0) {
+    newSteering = STEERING_RIGHT_FULL;
+  } else if (delta > 25.0 * PI / 180.0) {
+    newSteering = STEERING_LEFT_FULL;
+  } else if (delta < 0.0) {
+    newSteering = STEERING_RIGHT_HALF;
   } else {
-    newSteering = STEERING_LEFT;
+    newSteering = STEERING_LEFT_HALF;
   }
 
   setSteering(newSteering);
@@ -97,10 +105,14 @@ void Navigator::adjustSteering(float orientation, float targetOrientation) {
 
 void Navigator::setSteering(STEERING s) {
   int servoValue = STEERING_CENTER_SERVO;
-  if (s == STEERING_LEFT) {
-    servoValue = STEERING_LEFT_SERVO;
-  } else if (s == STEERING_RIGHT) {
-    servoValue = STEERING_RIGHT_SERVO;
+  if (s == STEERING_LEFT_FULL) {
+    servoValue = STEERING_LEFT_FULL_SERVO;
+  } else if (s == STEERING_LEFT_HALF) {
+    servoValue = STEERING_LEFT_HALF_SERVO;
+  } else if (s == STEERING_RIGHT_HALF) {
+    servoValue = STEERING_RIGHT_HALF_SERVO;
+  } else if (s == STEERING_RIGHT_FULL) {
+    servoValue = STEERING_RIGHT_FULL_SERVO;
   }
 
   //if (LOG_NAVIGATION_DEBUG) {

@@ -8,15 +8,13 @@ const long EMERGENCY_TIMEOUT_MS = 1 * 60 * 1000;
 Waypoint waypoints[] = {
   //Waypoint{10, 0, 0.3},
   // Left 10m square
-  /*
-  Waypoint{8, 0, 0.3},
-  Waypoint{10, 2, 0.3},
-  Waypoint{10, 8, 0.3},
-  Waypoint{8, 10, 0.3},
-  Waypoint{2, 10, 0.3},
-  Waypoint{0, 8, 0.3},
+  Waypoint{26, 0, 0.3},
+  Waypoint{30, 4, 0.3},
+  Waypoint{30, 6, 0.3},
+  Waypoint{26, 10, 0.3},
+  Waypoint{4, 10, 0.3},
+  Waypoint{0, 6, 0.3},
   Waypoint{0, -3, 3},
-  */
 
   // Right 10m square
   /*
@@ -30,6 +28,7 @@ Waypoint waypoints[] = {
   */
 
   // Figure 8
+  /*
   Waypoint{3, -3, 0.3},
   Waypoint{6, 0, 0.3},
   Waypoint{9, 3, 0.3},
@@ -39,6 +38,7 @@ Waypoint waypoints[] = {
   Waypoint{3, 3, 0.3},
   Waypoint{0, 0, 0.3},
   Waypoint{-4, 0, 3},
+  */
 };
 
 // PIN ASSIGNMENTS
@@ -94,7 +94,7 @@ void setup() {
   navigator.attachSteeringServo(STEERING_SERVO_PIN);
 }
 
-const long UPDATE_FREQUENCY_MS = 100;
+const long UPDATE_FREQUENCY_MS = 50;
 
 bool started = false;
 long startedTimestamp = 0;
@@ -221,10 +221,14 @@ void handleMockSensors() {
     STEERING steering = navigator.getSteering();
     if (MOCK_IMU) {
       // NOTE: IMU goes backwards, where positive is right, negative left, so adjust
-      if (steering == STEERING_LEFT) {
-        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_LEFT_TURN_RADIUS) * 180.0 / PI;
-      } else if (steering == STEERING_RIGHT) {
-        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_TURN_RADIUS) * 180.0 / PI;
+      if (steering == STEERING_LEFT_FULL) {
+        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_LEFT_FULL_TURN_RADIUS) * 180.0 / PI;
+      } else if (steering == STEERING_LEFT_HALF) {
+        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_LEFT_HALF_TURN_RADIUS) * 180.0 / PI;
+      } else if (steering == STEERING_RIGHT_HALF) {
+        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_HALF_TURN_RADIUS) * 180.0 / PI;
+      } else if (steering == STEERING_RIGHT_FULL) {
+        gYaw = gYaw - (WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * 1.0 / STEERING_RIGHT_FULL_TURN_RADIUS) * 180.0 / PI;
       }
       while (gYaw > 180.0) { gYaw -= 360.0; }
       while (gYaw < -180.0) { gYaw += 360.0; }
