@@ -1,7 +1,7 @@
 #ifndef DataTypes_h
 #define DataTypes_h
 
-const int LOG_LEVEL_SILENT = 1;
+const int LOG_LEVEL_SILENT = 0;
 const int LOG_LEVEL_WARN = 1;
 const int LOG_LEVEL_INFO = 2;
 const int LOG_LEVEL_DEBUG = 3;

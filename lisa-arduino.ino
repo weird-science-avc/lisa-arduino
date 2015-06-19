@@ -6,7 +6,9 @@
 // *** DEFINE COURSE HERE ***
 const long EMERGENCY_TIMEOUT_MS = 1 * 60 * 1000;
 Waypoint waypoints[] = {
+  //Waypoint{10, 0, 0.3},
   // Left 10m square
+  /*
   Waypoint{8, 0, 0.3},
   Waypoint{10, 2, 0.3},
   Waypoint{10, 8, 0.3},
@@ -14,6 +16,7 @@ Waypoint waypoints[] = {
   Waypoint{2, 10, 0.3},
   Waypoint{0, 8, 0.3},
   Waypoint{0, -3, 3},
+  */
 
   // Right 10m square
   /*
@@ -27,7 +30,6 @@ Waypoint waypoints[] = {
   */
 
   // Figure 8
-  /*
   Waypoint{3, -3, 0.3},
   Waypoint{6, 0, 0.3},
   Waypoint{9, 3, 0.3},
@@ -37,7 +39,6 @@ Waypoint waypoints[] = {
   Waypoint{3, 3, 0.3},
   Waypoint{0, 0, 0.3},
   Waypoint{-4, 0, 3},
-  */
 };
 
 // PIN ASSIGNMENTS
@@ -49,14 +50,14 @@ const int WHEEL_ENCODER_INT = 0; // pin 2
 
 // TODO: Move into a class
 const long MOCK_WHEEL_ENCODER_PIN = 8;
-const bool MOCK_IMU = true;
+const bool MOCK_IMU = false;
 void handleMockSensors();
 
 // Create helper objects
-PositionTracker tracker(LOG_LEVEL_INFO);
-WaypointManager manager(LOG_LEVEL_INFO);
-Navigator navigator(LOG_LEVEL_DEBUG);
-int logLevel = LOG_LEVEL_INFO;
+PositionTracker tracker(LOG_LEVEL_SILENT);
+WaypointManager manager(LOG_LEVEL_SILENT);
+Navigator navigator(LOG_LEVEL_SILENT);
+int logLevel = LOG_LEVEL_SILENT;
 
 // Global values for wheel encoder and IMU
 volatile long gWheelEncoderTicks = 0;
@@ -140,16 +141,19 @@ void loop() {
 }
 
 // If IMU data available read it
-// TODO: Consider moving this to PositionTracker and just have it read and wait for data
 void serialEvent() {
   if (!MOCK_IMU) {
-    gRoll = Serial.parseFloat();
-    gPitch = Serial.parseFloat();
-    gYaw = Serial.parseFloat();
+    float roll = Serial.parseFloat();
+    float pitch = Serial.parseFloat();
+    float yaw = Serial.parseFloat();
     char garbage[20];
     Serial.readBytesUntil('\0', garbage, 20);
     //Serial.print("gYaw: ");
     //Serial.println(gYaw);
+    // NOTE: Sometimes the IMU spikes changes so limit the size we believe for a given fast loop rad
+    //if (abs(yaw - gYaw) < IMU_MAX_DELTA_DEGREES) {
+      gYaw = yaw;
+    //}
   }
 }
 

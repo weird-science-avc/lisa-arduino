@@ -24,13 +24,6 @@ Position PositionTracker::update() {
   //Serial.print(gYaw);
   //Serial.print(", rDelta: ");
   //Serial.println(rDelta);
-  // NOTE: Sometimes the IMU spikes changes so limit the size we believe
-  if (abs(rDelta) > IMU_MAX_DELTA_RADIANS) {
-    // Skip this position update and get next time
-    // TODO: Return an error code so we can blink it out
-    return this->position;
-  }
-  // Successful read, store as last read
   this->lastYaw = gYaw;
 
   // Figure out wheel encoder delta, update stored value and calculate distance
