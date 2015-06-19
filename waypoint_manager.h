@@ -12,14 +12,16 @@ class WaypointManager
     int length();
 
     void setWaypoints(Waypoint* waypoints, int waypointsLength);
-    // Returns NULL when finished
-    Waypoint* getWaypoint(Position p);
+
+    void update(Position p);
+    bool finished();
+    Waypoint getWaypoint();
 
   private:
     int logLevel = 0;
     Waypoint* waypoints = 0;
     int waypointsLength = 0;
-    int waypointIndex = 0;
+    int waypointIndex = -1; // To signal that we haven't started yet
 };
 
 #endif

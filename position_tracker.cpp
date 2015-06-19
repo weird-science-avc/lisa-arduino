@@ -18,17 +18,24 @@ Position PositionTracker::update() {
   // Figure out IMU's latest orientation, figure out rDelta, and updated stored value
   // NOTE: IMU has right positive, so do last - now instead of more normal now - last to make left positive again.
   float rDelta = normalizeRadians((this->lastYaw - gYaw) * PI / 180.0);
+  //Serial.print("this->lastYaw: ");
+  //Serial.print(this->lastYaw);
+  //Serial.print(", gYaw: ");
+  //Serial.print(gYaw);
+  //Serial.print(", rDelta: ");
+  //Serial.println(rDelta);
   // NOTE: Sometimes the IMU spikes changes so limit the size we believe
   if (abs(rDelta) > IMU_MAX_DELTA_RADIANS) {
     // Skip this position update and get next time
+    // TODO: Return an error code so we can blink it out
     return this->position;
   }
   // Successful read, store as last read
   this->lastYaw = gYaw;
 
   // Figure out wheel encoder delta, update stored value and calculate distance
-  int wheelEncoderTicks = gWheelEncoderTicks;
-  int wheelEncoderDelta = wheelEncoderTicks - this->lastWheelEncoderTicks;
+  long wheelEncoderTicks = gWheelEncoderTicks;
+  long wheelEncoderDelta = wheelEncoderTicks - this->lastWheelEncoderTicks;
   lastWheelEncoderTicks = wheelEncoderTicks;
   float distance = WHEEL_ENCODER_M_DISTANCE_FROM_TICKS * float(wheelEncoderDelta);
 

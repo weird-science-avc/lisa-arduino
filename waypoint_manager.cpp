@@ -20,9 +20,18 @@ void WaypointManager::setWaypoints(Waypoint* waypoints, int waypointsLength) {
   for (int i = 0; i < waypointsLength; i++) {
     this->waypoints[i] = waypoints[i];
   }
+  this->waypointIndex = -1;
 }
 
-Waypoint* WaypointManager::getWaypoint(Position p) {
+bool WaypointManager::finished() {
+  return this->waypointIndex >= this->waypointsLength;
+}
+
+Waypoint WaypointManager::getWaypoint() {
+  return this->waypoints[this->waypointIndex];
+}
+
+void WaypointManager::update(Position p) {
   Waypoint w0;
   // Detect reset state so we can print a message sometimes
   if (this->waypointIndex < 0) {
@@ -40,11 +49,12 @@ Waypoint* WaypointManager::getWaypoint(Position p) {
   // TODO: We can probably abstract this more to allow skipping even more waypoints when applicable
   if (v0.d < w0.tolerance) { // Arrived
     if (this->logLevel >= LOG_LEVEL_INFO) {
-      serialPrintlnWaypoint("FINISH WAYPOINT (ARRIVED): ", this->waypointIndex, w0);
+      serialPrintWaypoint("FINISH WAYPOINT (ARRIVED): ", this->waypointIndex, w0);
+      serialPrintlnPosition(" @", p);
     }
     // Move forward, check all done, update return vars
     this->waypointIndex++;
-    if (this->waypointIndex >= this->waypointsLength) { return NULL; }
+    if (this->waypointIndex >= this->waypointsLength) { return; }
     w0 = this->waypoints[this->waypointIndex];
     v0 = getVector(p.x, p.y, w0.x, w0.y);
     if (this->logLevel >= LOG_LEVEL_INFO) {
@@ -57,7 +67,8 @@ Waypoint* WaypointManager::getWaypoint(Position p) {
     Vector v01 = getVector(w0.x, w0.y, w1.x, w1.y);
     if (v1.d < v01.d) { // p -> w1 smaller than w0 -> w1, promote
       if (this->logLevel >= LOG_LEVEL_INFO) {
-        serialPrintlnWaypoint("FINISH WAYPOINT (PROMOTION): ", this->waypointIndex, w0);
+        serialPrintWaypoint("FINISH WAYPOINT (PROMOTION): ", this->waypointIndex, w0);
+        serialPrintlnPosition(" @", p);
       }
       // Move forward, update return vars
       this->waypointIndex++;
@@ -68,6 +79,4 @@ Waypoint* WaypointManager::getWaypoint(Position p) {
       }
     }
   }
-
-  return &w0;
 }

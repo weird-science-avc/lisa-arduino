@@ -8,7 +8,7 @@
 #include "data_types.h"
 
 // Angle (radians) under which we won't make steering corrections
-const float ORIENTATION_DELTA = 5.0 * PI / 180.0;
+const float ORIENTATION_DELTA = 1.0 * PI / 180.0;
 // Distance (m) at which we slow down
 const float APPROACH_DELTA = 1.0;
 

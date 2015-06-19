@@ -42,9 +42,10 @@ bool Navigator::update(Position p, Waypoint w) {
   // Output what we're doing if debug
   if (this->logLevel >= LOG_LEVEL_VERBOSE || oldSpeed != speed || oldSteering != steering) {
     if (this->logLevel >= LOG_LEVEL_DEBUG) {
-      Serial.print("NAVIGATION: dist=");
+      serialPrintPosition("NAVIGATION: p=", p);
+      Serial.print(", dist=");
       Serial.print(v.d);
-      Serial.print(",dir=");
+      Serial.print(", dir=");
       Serial.print(v.r * 180.0 / PI);
       Serial.print(", SPEED: ");
       Serial.print(this->speed == SPEED_STOPPED ? "stopped" : this->speed == SPEED_LOW ? "low" : "high");
