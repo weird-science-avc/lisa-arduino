@@ -83,30 +83,27 @@ void Navigator::adjustSteering(float orientation, float targetOrientation) {
   float delta = targetOrientation - orientation;
   // Get delta between [-pi,pi]
   delta = normalizeRadians(delta);
-  STEERING newSteering;
-  if (abs(delta) < ORIENTATION_DELTA) {
-    newSteering = STEERING_CENTER;
-  } else if (delta < 0) {
-    newSteering = STEERING_RIGHT;
-  } else {
-    newSteering = STEERING_LEFT;
+  float newSteering;
+  if (abs(delta) < ORIENTATION_DELTA) { //.017
+    Serial.println("STEERING Center: ");
+    newSteering = STEERING_CENTER_SERVO;
+  } else if (delta <= - ORIENTATION_DELTA && delta >= -MAX_STEERING_THRESHOLD) {
+    newSteering = STEERING_CENTER_SERVO - (-delta/MAX_STEERING_THRESHOLD) * STEERING_RIGHT_SERVO_RANGE;
+  } else if (delta < -MAX_STEERING_THRESHOLD) {
+    newSteering = STEERING_RIGHT_SERVO;
+  } else if (delta >=  ORIENTATION_DELTA && delta <= MAX_STEERING_THRESHOLD) {
+     newSteering = (delta/MAX_STEERING_THRESHOLD) * STEERING_LEFT_SERVO_RANGE + STEERING_CENTER_SERVO;
+  } else if (delta > MAX_STEERING_THRESHOLD) {
+    newSteering = STEERING_LEFT_SERVO;
   }
-
+  
   setSteering(newSteering);
 }
 
-void Navigator::setSteering(STEERING s) {
-  int servoValue = STEERING_CENTER_SERVO;
-  if (s == STEERING_LEFT) {
-    servoValue = STEERING_LEFT_SERVO;
-  } else if (s == STEERING_RIGHT) {
-    servoValue = STEERING_RIGHT_SERVO;
-  }
-
-  //if (LOG_NAVIGATION_DEBUG) {
-  //  Serial.print("STEERING SERVO: ");
-  //  Serial.println(servoValue);
-  //}
+void Navigator::setSteering(float servoValue) {
+    if (this->logLevel >= LOG_LEVEL_DEBUG) {
+      Serial.print("STEERING SERVO: ");
+      Serial.println(servoValue);
+    }
   this->steeringServo.writeMicroseconds(servoValue);
-  this->steering = s;
 }

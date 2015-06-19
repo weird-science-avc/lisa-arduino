@@ -53,7 +53,7 @@ class Navigator
     void adjustSteering(float orientation, float targetOrientation);
 
     void setSpeed(SPEED speed);
-    void setSteering(STEERING steering);
+    void setSteering(float servoValue);
 };
 
 #endif
