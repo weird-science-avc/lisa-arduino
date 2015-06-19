@@ -3,11 +3,22 @@
 #include "waypoint_manager.h"
 #include "navigator.h"
 
+const float M_FT = 1.0 / 3.28;
+
 // *** DEFINE COURSE HERE ***
-const long EMERGENCY_TIMEOUT_MS = 1 * 60 * 1000;
+const long EMERGENCY_TIMEOUT_MS = 2 * 60 * 1000;
 Waypoint waypoints[] = {
+  // Sparkfun AVC 2015
+  Waypoint{48.0 * M_FT, 0, 0.3},
+  Waypoint{59.0 * M_FT, -11.0 * M_FT, 0.3},
+  //Waypoint{59.0 * M_FT, -41.0 * M_FT, 0.3}, // a little bit after first turn
+  Waypoint{64.0 * M_FT, -272.0 * M_FT, 0.3},
+  
+  // Straight 10m
   //Waypoint{10, 0, 0.3},
+  
   // Left 10m square
+  /*
   Waypoint{26, 0, 0.3},
   Waypoint{30, 4, 0.3},
   Waypoint{30, 6, 0.3},
@@ -15,6 +26,7 @@ Waypoint waypoints[] = {
   Waypoint{4, 10, 0.3},
   Waypoint{0, 6, 0.3},
   Waypoint{0, -3, 3},
+  */
 
   // Right 10m square
   /*
