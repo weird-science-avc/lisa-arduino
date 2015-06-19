@@ -94,8 +94,12 @@ void setup() {
   navigator.attachSteeringServo(STEERING_SERVO_PIN);
 }
 
-const long UPDATE_FREQUENCY_MS = 50;
+const long UPDATE_FREQUENCY_MS = 10;
 
+float avgWorkMs;
+long minWorkMs;
+long maxWorkMs;
+long workCount = 0;
 bool started = false;
 long startedTimestamp = 0;
 long lastUpdatedTimestamp = 0;
@@ -115,6 +119,9 @@ void loop() {
       emergencyStop();
     }
     else {
+      avgWorkMs = 0.0;
+      minWorkMs = 2147483647;
+      maxWorkMs = 0;
       start();
     }
     return;
@@ -129,6 +136,7 @@ void loop() {
   long timestamp = millis();
   if (millis() - lastUpdatedTimestamp > UPDATE_FREQUENCY_MS) {
     // Update position, waypoint, check done, and navigation
+    timestamp = millis();
     Position position = tracker.update();
     manager.update(position);
     if (manager.finished()) {
@@ -137,6 +145,11 @@ void loop() {
       navigator.update(position, manager.getWaypoint());
       lastUpdatedTimestamp = millis();
     }
+    long workElapsedMs = millis() - timestamp;
+    // Calculate running average of time in loop
+    minWorkMs = min(minWorkMs, workElapsedMs);
+    maxWorkMs = max(maxWorkMs, workElapsedMs);
+    avgWorkMs = (avgWorkMs * float(workCount) + workElapsedMs)/++workCount;
   }
 }
 
@@ -184,6 +197,12 @@ void stop() {
     Serial.print("**** END NAVIGATION -- ");
     Serial.print(float(duration) / 1000.0);
     Serial.println("s ****");
+    Serial.print("WORK: avg=");
+    Serial.print(avgWorkMs);
+    Serial.print(", min=");
+    Serial.print(minWorkMs);
+    Serial.print(", max=");
+    Serial.println(maxWorkMs);
   }
   blink(LED_PIN, 3, 100, 100);
 }
