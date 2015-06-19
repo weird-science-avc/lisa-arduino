@@ -14,18 +14,30 @@ const float INCH_TO_M = 0.0254;
 // and pick to either turn 0, fixed left or fixed right, where we have the
 // direct correlation to left and right determined already.
 const float STEERING_CENTER_SERVO = 1608; // Not (STEERING_MAX_SERVO + STEERING_MIN_SERVO) / 2 by experimentation
+
 const float STEERING_LEFT_HALF_SERVO = 1864; // half to max
 const float STEERING_LEFT_HALF_TURN_RADIUS_INCH = 146;
 const float STEERING_LEFT_HALF_TURN_RADIUS = STEERING_LEFT_HALF_TURN_RADIUS_INCH * INCH_TO_M; // m
+
 const float STEERING_LEFT_FULL_SERVO = 2120; // max
 const float STEERING_LEFT_FULL_TURN_RADIUS_INCH = 77;
 const float STEERING_LEFT_FULL_TURN_RADIUS = STEERING_LEFT_FULL_TURN_RADIUS_INCH * INCH_TO_M; // m
+
+const float STEERING_LEFT_FULL_SERVO_RANGE = STEERING_LEFT_FULL_SERVO - STEERING_CENTER_SERVO;
+
 const float STEERING_RIGHT_HALF_SERVO = 1379; // picked half way to max
 const float STEERING_RIGHT_HALF_TURN_RADIUS_INCH = -116;
 const float STEERING_RIGHT_HALF_TURN_RADIUS = STEERING_RIGHT_HALF_TURN_RADIUS_INCH * INCH_TO_M; // m
+
 const float STEERING_RIGHT_FULL_SERVO = 1150; // picked half way to max
 const float STEERING_RIGHT_FULL_TURN_RADIUS_INCH = -66;
 const float STEERING_RIGHT_FULL_TURN_RADIUS = STEERING_RIGHT_FULL_TURN_RADIUS_INCH * INCH_TO_M; // m
+
+const float STEERING_RIGHT_FULL_SERVO_RANGE = STEERING_CENTER_SERVO - STEERING_RIGHT_FULL_SERVO;
+
+const float MIN_STEERING_THRESHOLD = 0.08726; // 5 degrees
+const float MAX_STEERING_THRESHOLD = 0.52359; // 30 degrees
+const float STEERING_THRESHOLD_RANGE = MAX_STEERING_THRESHOLD - MIN_STEERING_THRESHOLD;
 
 //// Pick our 30 and 10 degree turn radiuses based on what we can hit with both left and right to standardize
 //const float TURN_RADIUS_FOR_30_DEGREES = 1.0; // m
