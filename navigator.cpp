@@ -107,17 +107,16 @@ void Navigator::adjustSteering(float orientation, float targetOrientation) {
 
   // Continuous steering
   float newSteering;
-  if (abs(delta) < ORIENTATION_DELTA) { //.017
-    Serial.println("STEERING Center: ");
-    newSteering = STEERING_CENTER_SERVO;
-  } else if (delta <= - ORIENTATION_DELTA && delta >= -MAX_STEERING_THRESHOLD) {
-    newSteering = STEERING_CENTER_SERVO - (-delta/MAX_STEERING_THRESHOLD) * STEERING_RIGHT_FULL_SERVO_RANGE;
+  if (delta <= 0.0 && delta >= -MAX_STEERING_THRESHOLD) {
+    newSteering = STEERING_CENTER_SERVO - (-delta/MAX_STEERING_THRESHOLD) * 0.25 * STEERING_RIGHT_FULL_SERVO_RANGE;
   } else if (delta < -MAX_STEERING_THRESHOLD) {
-    newSteering = STEERING_RIGHT_FULL_SERVO;
-  } else if (delta >=  ORIENTATION_DELTA && delta <= MAX_STEERING_THRESHOLD) {
-     newSteering = (delta/MAX_STEERING_THRESHOLD) * STEERING_LEFT_FULL_SERVO_RANGE + STEERING_CENTER_SERVO;
+    newSteering = STEERING_CENTER_SERVO - STEERING_RIGHT_FULL_SERVO_RANGE * 0.25;
+  } else if (delta >= 0.0 && delta <= MAX_STEERING_THRESHOLD) {
+     newSteering = (delta/MAX_STEERING_THRESHOLD) * 0.25 * STEERING_LEFT_FULL_SERVO_RANGE + STEERING_CENTER_SERVO;
   } else if (delta > MAX_STEERING_THRESHOLD) {
-    newSteering = STEERING_LEFT_FULL_SERVO;
+    newSteering = STEERING_CENTER_SERVO + STEERING_LEFT_FULL_SERVO_RANGE * 0.25;
+  } else {
+    newSteering = STEERING_CENTER_SERVO;
   }
   setSteering(newSteering);
 }

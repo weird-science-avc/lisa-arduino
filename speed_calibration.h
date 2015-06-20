@@ -12,5 +12,5 @@ const int SPEED_STOPPED_SERVO = 0;
 const float SPEED_LOW_VELOCITY = 1.0;
 const int SPEED_LOW_SERVO = max(min(int(SPEED_M_SERVO_FROM_VELOCITY * SPEED_LOW_VELOCITY + SPEED_B_SERVO_FROM_VELOCITY), SPEED_MAX_SERVO), SPEED_MIN_SERVO);
 // NOTE: If you bump up the top speed you should also make it do updates in the main loop faster or allow more IMU angle variation, otherwise we turn to fast to track
-const float SPEED_HIGH_VELOCITY = 4.0;
+const float SPEED_HIGH_VELOCITY = 3.5;
 const int SPEED_HIGH_SERVO = max(min(int(SPEED_M_SERVO_FROM_VELOCITY * SPEED_HIGH_VELOCITY + SPEED_B_SERVO_FROM_VELOCITY), SPEED_MAX_SERVO), SPEED_MIN_SERVO);
