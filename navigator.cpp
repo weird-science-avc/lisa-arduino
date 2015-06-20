@@ -76,7 +76,7 @@ void Navigator::setSpeed(SPEED s) {
   }
 
   // Protect always
-  servoValue = int(max(min(SPEED_MAX_SERVO, servoValue), SPEED_MIN_SERVO));
+//  servoValue = int(max(min(SPEED_MAX_SERVO, servoValue), SPEED_MIN_SERVO));
   //if (LOG_NAVIGATION_DEBUG) {
   //  Serial.print("SPEED SERVO: ");
   //  Serial.println(servoValue);
