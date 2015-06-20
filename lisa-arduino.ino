@@ -9,22 +9,22 @@ const float M_FT = 1.0 / 3.28;
 const long EMERGENCY_TIMEOUT_MS = 2 * 60 * 1000;
 Waypoint waypoints[] = {
   // Sparkfun AVC 2015
-  Waypoint{54.0 * M_FT, 0            , 5.0 * M_FT},   //Corner 1
-  Waypoint{65.0 * M_FT, -142.5 * M_FT, 5.0 * M_FT},  
-  Waypoint{70.0 * M_FT, -287.0 * M_FT, 5.0 * M_FT},   //Corner 2
+  Waypoint{56.0 * M_FT, 0            , 5.0 * M_FT},   //Corner 1
+  //Waypoint{65.0 * M_FT, -142.5 * M_FT, 5.0 * M_FT},
+  Waypoint{70.0 * M_FT, -285.0 * M_FT, 5.0 * M_FT},   //Corner 2
 //  Waypoint{10.0 * M_FT, -298.0 * M_FT, 5.0 * M_FT},  //          -8 drift y
-  Waypoint{-65.0 * M_FT, -303.0 * M_FT, 5.0 * M_FT}, // Corner 3 -8 drift y
-  Waypoint{-69.0 * M_FT, -158.5 * M_FT, 5.0 * M_FT},
-  Waypoint{-73.0 * M_FT, -23.0 * M_FT, 5.0 * M_FT},    // Corner 4 
+  Waypoint{-70.0 * M_FT, -303.0 * M_FT, 5.0 * M_FT}, // Corner 3 -8 drift y
+  //Waypoint{-69.0 * M_FT, -158.5 * M_FT, 5.0 * M_FT},
+  Waypoint{-78.0 * M_FT, -21.0 * M_FT, 5.0 * M_FT},    // Corner 4
   Waypoint{10.0 * M_FT, -14.0 * M_FT, 5.0 * M_FT},
-  
+
   //Waypoint{59.0 * M_FT, -11.0 * M_FT, 0.3},
   //Waypoint{59.0 * M_FT, -41.0 * M_FT, 0.3}, // a little bit after first turn
   //Waypoint{64.0 * M_FT, -272.0 * M_FT, 0.3},
-  
+
   // Straight 10m
   //Waypoint{10, 0, 0.3},
-  
+
   // Left 10m square
   /*
   Waypoint{26, 0, 0.3},
